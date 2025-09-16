@@ -1,19 +1,13 @@
+
+//import UIKit
 //
-//  ViewController.swift
-//  Tracker
+//class ViewController: UIViewController {
 //
-//  Created by Andrei  Boyarko on 29/08/2025.
+//    override func viewDidLoad() {
+//        super.viewDidLoad()
+//        // Do any additional setup after loading the view.
+//    }
 //
-
-import UIKit
-
-class ViewController: UIViewController {
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
-
-
-}
-
+//
+//}
+//
