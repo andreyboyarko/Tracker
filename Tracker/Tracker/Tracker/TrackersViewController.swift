@@ -1,82 +1,85 @@
+
 import UIKit
 
 final class TrackersViewController: UIViewController {
-    
+
     private let searchField = UISearchTextField()
     private var searchTopConstraint: NSLayoutConstraint!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         title = "Трекеры"
-        
+
         setupNavBarAppearance()
         setupLeftPlus()
         setupRightDate()
         setupSearchField()
         setupEmptyState()
     }
-    
+
     // MARK: - NavBar (фон светлый, большой заголовок 34 Bold, цвет #1A1B22)
-       private func setupNavBarAppearance() {
-           navigationController?.navigationBar.prefersLargeTitles = true
-           navigationItem.largeTitleDisplayMode = .always
+    private func setupNavBarAppearance() {
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
 
-           let titleColor = UIColor(hex: "#1A1B22") ?? .label
+        let titleColor = UIColor(hex: "#1A1B22") ?? .label
 
-           let ap = UINavigationBarAppearance()
-           ap.configureWithOpaqueBackground()
-           ap.backgroundColor = .systemBackground
-           ap.shadowColor = .clear
-           ap.titleTextAttributes = [
-               .foregroundColor: titleColor,
-               .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
-           ]
-           ap.largeTitleTextAttributes = [
-               .foregroundColor: titleColor,
-               .font: UIFont.systemFont(ofSize: 34, weight: .bold)
-           ]
+        let ap = UINavigationBarAppearance()
+        ap.configureWithOpaqueBackground()
+        ap.backgroundColor = .systemBackground
+        ap.shadowColor = .clear
+        ap.titleTextAttributes = [
+            .foregroundColor: titleColor,
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+        ]
+        ap.largeTitleTextAttributes = [
+            .foregroundColor: titleColor,
+            .font: UIFont.systemFont(ofSize: 34, weight: .bold)
+        ]
 
-           let bar = navigationController?.navigationBar
-           bar?.standardAppearance = ap
-           bar?.scrollEdgeAppearance = ap
-           bar?.compactAppearance = ap
-           bar?.tintColor = titleColor
-           bar?.isTranslucent = false
-       }
-    
-    // MARK: - Left: Plus 42×42, визуальный отступ от края 6pt
+        let bar = navigationController?.navigationBar
+        bar?.standardAppearance = ap
+        bar?.scrollEdgeAppearance = ap
+        bar?.compactAppearance = ap
+        bar?.tintColor = titleColor
+        bar?.isTranslucent = false
+    }
+
+    // MARK: - Left: Plus 42×42, визуальный отступ от края ≈6pt
     private func setupLeftPlus() {
         let plusButton = UIButton(type: .system)
-
-        // ВАЖНО: отключаем дефолтную конфигурацию, иначе инсеты игнорируются
-        plusButton.configuration = nil
-
+        plusButton.configuration = nil // иначе contentEdgeInsets игнорируются
         let image = UIImage(named: "Plus")?.withRenderingMode(.alwaysTemplate)
         plusButton.setImage(image, for: .normal)
         plusButton.tintColor = .label
 
-        // Размер по макету
         plusButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             plusButton.widthAnchor.constraint(equalToConstant: 42),
             plusButton.heightAnchor.constraint(equalToConstant: 42)
         ])
-
-        // Сдвиг картинки на 10pt влево => визуальный отступ от края ~6pt (16 − 10)
         plusButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: -10, bottom: 0, right: 10)
         plusButton.imageView?.contentMode = .center
 
         plusButton.addTarget(self, action: #selector(didTapAdd), for: .touchUpInside)
-
-        let item = UIBarButtonItem(customView: plusButton)
-        navigationItem.leftBarButtonItem = item
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: plusButton)
     }
 
+    // Открываем «Новую привычку» как в макете
     @objc private func didTapAdd() {
-        print("Нажали +")
+        let vc = NewTrackerCellViewController()
+        vc.showSchedule = true
+        // при необходимости — колбэк результата:
+        // vc.onTrackerAdded = { [weak self] category in
+        //     // обновить список
+        // }
+
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true)
     }
-    
+
     // MARK: - Right: Пилюля даты (авто-ширина, высота 34, паддинги 6/12)
     private func setupRightDate() {
         let df = DateFormatter()
@@ -93,7 +96,7 @@ final class TrackersViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = text
         label.textColor = .label
-        label.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular) // близко к макету, помещается
+        label.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.9
         label.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -101,8 +104,7 @@ final class TrackersViewController: UIViewController {
 
         container.addSubview(label)
         NSLayoutConstraint.activate([
-            container.heightAnchor.constraint(equalToConstant: 34),                  // фиксируем только высоту
-            // ограничим разумный максимум ширины, чтобы «пилюля» не разрасталась
+            container.heightAnchor.constraint(equalToConstant: 34),
             container.widthAnchor.constraint(lessThanOrEqualToConstant: 84),
 
             label.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
@@ -113,7 +115,7 @@ final class TrackersViewController: UIViewController {
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: container)
     }
-    
+
     // MARK: - Search field (36pt, bg #F0F0F0, radius 10)
     private func setupSearchField() {
         searchField.placeholder = "Поиск"
@@ -127,7 +129,7 @@ final class TrackersViewController: UIViewController {
         view.addSubview(searchField)
         searchField.translatesAutoresizingMaskIntoConstraints = false
 
-        searchTopConstraint = searchField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6) // временно
+        searchTopConstraint = searchField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6)
         NSLayoutConstraint.activate([
             searchTopConstraint,
             searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -135,14 +137,12 @@ final class TrackersViewController: UIViewController {
             searchField.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
-    
+
     // MARK: - Empty state ("Что будем отслеживать?")
     private func setupEmptyState() {
-        // Картинка
         let errorImage = UIImageView(image: UIImage(named: "error"))
         errorImage.translatesAutoresizingMaskIntoConstraints = false
 
-        // Подпись
         let messageLabel = UILabel()
         messageLabel.text = "Что будем отслеживать?"
         messageLabel.font = .systemFont(ofSize: 12, weight: .medium)
@@ -150,7 +150,6 @@ final class TrackersViewController: UIViewController {
         messageLabel.textAlignment = .center
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        // Контейнер для центрирования блока
         let container = UIStackView(arrangedSubviews: [errorImage, messageLabel])
         container.axis = .vertical
         container.alignment = .center
@@ -160,46 +159,36 @@ final class TrackersViewController: UIViewController {
         view.addSubview(container)
 
         NSLayoutConstraint.activate([
-            // Центрируем весь блок по экрану
             container.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             container.centerYAnchor.constraint(equalTo: view.centerYAnchor),
 
-            // Размеры картинки строго по макету
             errorImage.widthAnchor.constraint(equalToConstant: 80),
             errorImage.heightAnchor.constraint(equalToConstant: 80)
         ])
     }
-    
-    // MARK: -
+
+    // MARK: - Подгоняем отступ поиска под большой заголовок
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         adjustSearchTopToLargeTitle()
     }
 
-    /// Сдвигаем поле поиска так, чтобы было ровно 7pt от низа большого заголовка
     private func adjustSearchTopToLargeTitle() {
         guard let navBar = navigationController?.navigationBar else {
             searchTopConstraint.constant = 6
             return
         }
-
         guard let titleLabel = findLargeTitleLabel(in: navBar) else {
-            // если не нашли лейбл (нет большого заголовка и т.п.)
             searchTopConstraint.constant = 6
             return
         }
-
-        // Низ заголовка в системе координат view
         let labelBottomInView = navBar.convert(titleLabel.frame, to: view).maxY
         let safeTop = view.safeAreaLayoutGuide.layoutFrame.minY
-
-        // хотим 7pt между заголовком и поиском
         let wanted = max(0, (labelBottomInView - safeTop) + 7)
         searchTopConstraint.constant = wanted
         view.layoutIfNeeded()
     }
 
-    /// Ищем UILabel большого заголовка (самый надёжный способ — по тексту)
     private func findLargeTitleLabel(in navBar: UINavigationBar) -> UILabel? {
         func dfs(_ v: UIView) -> UILabel? {
             if let l = v as? UILabel, l.text == self.title { return l }
@@ -209,7 +198,6 @@ final class TrackersViewController: UIViewController {
         return dfs(navBar)
     }
 }
-
 
 // MARK: - HEX helper
 private extension UIColor {
