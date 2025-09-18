@@ -4,49 +4,44 @@ final class TabBarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .systemBackground
 
-        // 1) Экран «Трекеры»
-        let trackersVC = TrackersViewController() // или TrackerViewController, как у тебя называется реально
+        // TabBarController.swift — внутри viewDidLoad()
+
+        let trackersVC = TrackersViewController()
+        let trackersImg = UIImage(named: "trackers")?.withRenderingMode(.alwaysTemplate)
         trackersVC.tabBarItem = UITabBarItem(
             title: "Трекеры",
-            image: UIImage(named: "trackers"), // или UIImage(resource: .trackers) если генерируешь ресурсы
-            tag: 0
+            image: trackersImg,
+            selectedImage: trackersImg
         )
 
-        // 2) Экран «Статистика»
         let statsVC = UIViewController()
         statsVC.view.backgroundColor = .systemBackground
+        let statsImg = UIImage(named: "stats")?.withRenderingMode(.alwaysTemplate)
         statsVC.tabBarItem = UITabBarItem(
             title: "Статистика",
-            image: UIImage(named: "stats"),
-            tag: 1
+            image: statsImg,
+            selectedImage: statsImg
         )
 
-        // Оборачиваем в навигацию
+        // Цвета таббара
+        tabBar.tintColor = UIColor(named: "blue") ?? .systemBlue          // активная
+        tabBar.unselectedItemTintColor = UIColor(named: "ybGray") ?? .systemGray // неактивная
+
         let nav1 = UINavigationController(rootViewController: trackersVC)
         let nav2 = UINavigationController(rootViewController: statsVC)
 
         viewControllers = [nav1, nav2]
 
-        configureTabBarAppearance()
-    }
+        // Цвета таббара: активный — blue из Assets, неактивный — ybGray
+        tabBar.tintColor = UIColor(named: "blue") ?? .systemBlue
+        tabBar.unselectedItemTintColor = UIColor(named: "ybGray") ?? .systemGray
 
-    private func configureTabBarAppearance() {
         let ap = UITabBarAppearance()
         ap.configureWithOpaqueBackground()
         ap.backgroundColor = .systemBackground
-        ap.shadowColor = UIColor(white: 0, alpha: 0.1) // верхняя тонкая полоска
-
-        // Цвета айтемов
-        ap.stackedLayoutAppearance.normal.iconColor = UIColor.systemGray
-        ap.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.systemGray]
-        ap.stackedLayoutAppearance.selected.iconColor = .systemBlue
-        ap.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor.systemBlue]
-
         tabBar.standardAppearance = ap
         if #available(iOS 15.0, *) { tabBar.scrollEdgeAppearance = ap }
-
-        tabBar.tintColor = .systemBlue
-        tabBar.unselectedItemTintColor = .systemGray
     }
 }

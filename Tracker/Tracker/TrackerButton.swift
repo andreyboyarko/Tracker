@@ -3,32 +3,26 @@
 import UIKit
 
 final class TrackerButton: UIButton {
+    private var title: String
     
-    // MARK: - Init
-    init(title: String,
-         backgroundColor: UIColor = .systemBlue,
-         titleColor: UIColor = .white,
-         disabledTitleColor: UIColor = .lightGray,
-         cornerRadius: CGFloat = 16) {
-        
+    init(title: String) {
+        self.title = title
         super.init(frame: .zero)
         
-        // Текст
+        // Заголовок
         setTitle(title, for: .normal)
-        setTitleColor(titleColor, for: .normal)
-        setTitleColor(disabledTitleColor, for: .disabled)
-        
-        // Шрифт
+        setTitleColor(UIColor(named: "ybBlack") ?? .black, for: .normal)
+        setTitleColor(.white, for: .disabled)
         titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         
-        // Цвета
-        self.backgroundColor = backgroundColor
+        // Цвета по Фигме
+        backgroundColor = UIColor(named: "color") ?? .systemGray5
         
-        // Скругления
-        layer.cornerRadius = cornerRadius
+        // Скругление
+        layer.cornerRadius = 16
         layer.masksToBounds = true
         
-        // Автолэйаут
+        // Автолейаут
         translatesAutoresizingMaskIntoConstraints = false
         heightAnchor.constraint(equalToConstant: 60).isActive = true
     }

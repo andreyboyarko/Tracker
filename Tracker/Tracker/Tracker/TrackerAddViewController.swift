@@ -1,4 +1,5 @@
 
+
 import UIKit
 
 final class TrackerAddViewController: UIViewController {
@@ -17,7 +18,7 @@ final class TrackerAddViewController: UIViewController {
 
         view.backgroundColor = UIColor(named: "background") ?? .systemBackground
         navigationItem.title = "Создание трекера"
-        applyNavBarStyle(prefersLargeTitle: false)   // единый стиль заголовка
+        applyNavBarStyle(prefersLargeTitle: false) // единый стиль заголовка
 
         setupStack()
         setupButtons()
@@ -65,9 +66,39 @@ final class TrackerAddViewController: UIViewController {
             self?.dismiss(animated: true)
         }
         vc.showSchedule = !isIrregular
-        vc.modalPresentationStyle = .pageSheet
 
+        // Оборачиваем в навигацию и делаем непрозрачный бар (как в макете)
         let nav = UINavigationController(rootViewController: vc)
+        configurePresentedNavBarAppearance(for: nav)
+
+        // Компактный лист
+        nav.modalPresentationStyle = .pageSheet
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 16
+        }
+
         present(nav, animated: true)
+    }
+
+    /// Непрозрачный навбар для презентуемого контроллера (чтобы фон не «просвечивал»)
+    private func configurePresentedNavBarAppearance(for nav: UINavigationController) {
+        let ap = UINavigationBarAppearance()
+        ap.configureWithOpaqueBackground()
+        ap.backgroundColor = UIColor(named: "background") ?? .systemBackground
+        ap.shadowColor = .clear
+
+        // Цвет/шрифт заголовка можно оставить системными или подставить свои
+        ap.titleTextAttributes = [
+            .foregroundColor: UIColor(named: "color") ?? .label,
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+        ]
+
+        nav.navigationBar.standardAppearance = ap
+        nav.navigationBar.scrollEdgeAppearance = ap
+        nav.navigationBar.compactAppearance = ap
+        nav.navigationBar.isTranslucent = false
+        nav.navigationBar.tintColor = UIColor(named: "color") ?? .label
     }
 }

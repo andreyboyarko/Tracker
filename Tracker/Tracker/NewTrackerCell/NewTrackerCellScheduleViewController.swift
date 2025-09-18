@@ -1,5 +1,3 @@
-
-
 import UIKit
 
 final class NewTrackerCellScheduleViewController: UIViewController {
@@ -17,6 +15,7 @@ final class NewTrackerCellScheduleViewController: UIViewController {
         view.backgroundColor = .ybBlack
         navigationItem.title = "Расписание"
         
+        // Таблица
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .background
         tableView.separatorStyle = .singleLine
@@ -25,11 +24,19 @@ final class NewTrackerCellScheduleViewController: UIViewController {
         tableView.isScrollEnabled = false
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(NewTrackerWeekDayCell.self, forCellReuseIdentifier: NewTrackerWeekDayCell.identifier)
+        tableView.register(NewTrackerWeekDayCell.self,
+                           forCellReuseIdentifier: NewTrackerWeekDayCell.identifier)
         
-        button.addTarget(self, action: #selector(closePage), for: .touchUpInside)
+        // Кнопка «Готово» — стиль как в фигме
         button.translatesAutoresizingMaskIntoConstraints = false
-        
+        button.backgroundColor = .ybBlack
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 16
+        button.layer.masksToBounds = true
+        // На всякий случай фиксируем высоту (если твой TrackerButton уже даёт 60 — не мешает)
+        button.heightAnchor.constraint(equalToConstant: 60).isActive = true
+        button.addTarget(self, action: #selector(closePage), for: .touchUpInside)
+
         view.addSubview(tableView)
         view.addSubview(button)
         
@@ -39,15 +46,25 @@ final class NewTrackerCellScheduleViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             tableView.heightAnchor.constraint(equalToConstant: rowHeight * numberOfRows),
             
-            button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             button.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             button.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
         ])
+        
+        updateButtonState()
     }
     
     @objc private func closePage() {
         setWeekdays?(weekdays)
         dismiss(animated: true)
+    }
+    
+    // Делай кнопку активной только при выборе дней (как в некоторых шагах макета).
+    // Если нужна всегда активная — просто закомментируй две строки внутри.
+    private func updateButtonState() {
+        let enabled = !weekdays.isEmpty
+        button.isEnabled = enabled
+        button.backgroundColor = enabled ? .color : .ybGray
     }
 }
 
@@ -62,7 +79,8 @@ extension NewTrackerCellScheduleViewController: UITableViewDataSource {
         WeekdaysEnum.allCases.count
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(
             withIdentifier: NewTrackerWeekDayCell.identifier,
             for: indexPath
@@ -75,14 +93,13 @@ extension NewTrackerCellScheduleViewController: UITableViewDataSource {
         cell.isOn = weekdays.contains(day)
         cell.onToggle = { [weak self] day in
             guard let self else { return }
-            
-            if let index = self.weekdays.firstIndex(of: day) {
-                self.weekdays.remove(at: index)
+            if let idx = self.weekdays.firstIndex(of: day) {
+                self.weekdays.remove(at: idx)
             } else {
                 self.weekdays.append(day)
             }
+            self.updateButtonState() // <- обновляем состояние кнопки
         }
-        
         return cell
     }
 }

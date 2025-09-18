@@ -43,7 +43,7 @@ final class TrackerViewCell: UICollectionViewCell {
         
         countLabel.text = "\(count) дней"
         countLabel.font = .ypMedium
-        countLabel.textColor = .color   // ⬅️ заменил на твой кастомный цвет
+        countLabel.textColor = .color
         countLabel.translatesAutoresizingMaskIntoConstraints = false
         
         let image = UIImage(resource: isCompleted ? .check : .plus)
@@ -69,7 +69,6 @@ final class TrackerViewCell: UICollectionViewCell {
             
             countLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             countLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
-            
             button.topAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 8),
             button.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
             button.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
