@@ -12,7 +12,21 @@ final class TrackersViewController: UIViewController {
     private var dateLabel: UILabel!
     private var currentDate = Date()
     private let datePopoverDelegate = DatePopoverDelegate() // делегат только для поповера
-
+    
+    // фильтр
+    private let filtersButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.configuration = nil
+        b.setTitle("Фильтры", for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        b.backgroundColor = UIColor(named: "blue") // твой ассет
+        b.layer.cornerRadius = 16
+        b.layer.masksToBounds = true
+        b.contentEdgeInsets = .init(top: 6, left: 20, bottom: 6, right: 20) // авто-ширина
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
     // Коллекция
     private var collectionView: UICollectionView!
 
@@ -34,6 +48,16 @@ final class TrackersViewController: UIViewController {
 
     // Пустое состояние
     private var emptyStack: UIStackView!
+    
+    private func setupFiltersButton() {
+        view.addSubview(filtersButton)
+        NSLayoutConstraint.activate([
+            filtersButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            filtersButton.heightAnchor.constraint(equalToConstant: 52),
+            filtersButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 160)
+        ])
+    }
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -47,6 +71,7 @@ final class TrackersViewController: UIViewController {
         setupSearchField()
         setupEmptyState()
         setupCollectionView()
+        setupFiltersButton()
 
         applyFilterForCurrentDate()
     }

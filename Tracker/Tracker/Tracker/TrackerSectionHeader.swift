@@ -7,10 +7,8 @@ final class TrackerSectionHeader: UICollectionReusableView {
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        backgroundColor = .clear   // ← убираем серую плашку
-
+        backgroundColor = .clear
         addSubview(label)
-        // по макету: YP/Bold/19
         label.font = .systemFont(ofSize: 19, weight: .bold)
         label.textColor = UIColor(named: "color") ?? .label
         label.translatesAutoresizingMaskIntoConstraints = false

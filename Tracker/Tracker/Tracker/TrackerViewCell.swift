@@ -46,7 +46,7 @@ final class TrackerViewCell: UICollectionViewCell {
         countLabel.textColor = .color
         countLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        let image = UIImage(resource: isCompleted ? .check : .plus)
+        let image = UIImage(resource: isCompleted ? .check : .plus2)
         button.setImage(image, for: .normal)
         button.addTarget(self, action: #selector(toggleDone), for: .touchUpInside)
         button.tintColor = tracker.color
