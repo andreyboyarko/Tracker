@@ -6,8 +6,6 @@ final class TabBarController: UITabBarController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        // TabBarController.swift — внутри viewDidLoad()
-
         let trackersVC = TrackersViewController()
         let trackersImg = UIImage(named: "trackers")?.withRenderingMode(.alwaysTemplate)
         trackersVC.tabBarItem = UITabBarItem(

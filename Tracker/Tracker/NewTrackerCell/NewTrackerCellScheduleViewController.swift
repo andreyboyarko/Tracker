@@ -27,13 +27,13 @@ final class NewTrackerCellScheduleViewController: UIViewController {
         tableView.register(NewTrackerWeekDayCell.self,
                            forCellReuseIdentifier: NewTrackerWeekDayCell.identifier)
         
-        // Кнопка «Готово» — стиль как в фигме
+        // Кнопка «Готово»
         button.translatesAutoresizingMaskIntoConstraints = false
         button.backgroundColor = .ybBlack
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 16
         button.layer.masksToBounds = true
-        // На всякий случай фиксируем высоту (если твой TrackerButton уже даёт 60 — не мешает)
+       
         button.heightAnchor.constraint(equalToConstant: 60).isActive = true
         button.addTarget(self, action: #selector(closePage), for: .touchUpInside)
 
@@ -59,8 +59,6 @@ final class NewTrackerCellScheduleViewController: UIViewController {
         dismiss(animated: true)
     }
     
-    // Делай кнопку активной только при выборе дней (как в некоторых шагах макета).
-    // Если нужна всегда активная — просто закомментируй две строки внутри.
     private func updateButtonState() {
         let enabled = !weekdays.isEmpty
         button.isEnabled = enabled

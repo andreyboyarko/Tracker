@@ -2,6 +2,8 @@
 
 import UIKit
 
+import UIKit
+
 final class TrackerButton: UIButton {
     private var title: String
     
@@ -9,20 +11,15 @@ final class TrackerButton: UIButton {
         self.title = title
         super.init(frame: .zero)
         
-        // Заголовок
         setTitle(title, for: .normal)
-        setTitleColor(UIColor(named: "ybBlack") ?? .black, for: .normal)
+        setTitleColor(.ybBlack, for: .normal)
         setTitleColor(.white, for: .disabled)
-        titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        titleLabel?.textColor = .ybBlack
+        backgroundColor = .color
         
-        // Цвета по Фигме
-        backgroundColor = UIColor(named: "color") ?? .systemGray5
-        
-        // Скругление
         layer.cornerRadius = 16
         layer.masksToBounds = true
         
-        // Автолейаут
         translatesAutoresizingMaskIntoConstraints = false
         heightAnchor.constraint(equalToConstant: 60).isActive = true
     }

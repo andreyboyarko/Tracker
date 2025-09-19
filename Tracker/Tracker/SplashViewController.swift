@@ -36,9 +36,7 @@ final class SplashViewController: UIViewController {
             return
         }
         
-        let controller = TabBarController() // если у тебя TabBarController кодом
-        // let controller = UIStoryboard(name: "Main", bundle: .main)
-        //     .instantiateViewController(withIdentifier: "TabBarViewController") // если через storyboard
+        let controller = TabBarController() 
         
         window.rootViewController = controller
         window.makeKeyAndVisible()

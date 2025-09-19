@@ -16,7 +16,7 @@ final class DatePickerViewController: UIViewController {
         view.backgroundColor = .systemBackground
         view.isUserInteractionEnabled = true
 
-        // Календарь в виде инлайн-таблицы (как в макете)
+        // Календарь в виде инлайн-таблицы
         picker.preferredDatePickerStyle = .inline
         picker.datePickerMode = .date
         picker.locale = Locale(identifier: "ru_RU")
@@ -24,7 +24,7 @@ final class DatePickerViewController: UIViewController {
         picker.timeZone = .current
         picker.date = initialDate
 
-        // ВАЖНО: реагируем на тыки по дням
+        // реагируем на тыки по дням
         picker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
 
         // Лейаут
@@ -37,7 +37,6 @@ final class DatePickerViewController: UIViewController {
             picker.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8)
         ])
 
-        // (опционально) заголовок/кнопка «Готово», если показываешь в навконтроллере
         navigationItem.title = "Выберите дату"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Готово",
@@ -56,44 +55,3 @@ final class DatePickerViewController: UIViewController {
         dismiss(animated: true)
     }
 }
-//
-//import UIKit
-//
-//final class DatePickerViewController: UIViewController {
-//
-//    var initialDate: Date = Date()
-//    var onPick: ((Date) -> Void)?
-//
-//    private let picker = UIDatePicker()
-//
-//    override func viewDidLoad() {
-//        super.viewDidLoad()
-//        view.backgroundColor = .systemBackground
-//
-//        picker.datePickerMode = .date
-//        picker.preferredDatePickerStyle = .inline   // «маленький календарь»
-//        picker.date = initialDate
-//        picker.translatesAutoresizingMaskIntoConstraints = false
-//        view.addSubview(picker)
-//
-//        NSLayoutConstraint.activate([
-//            picker.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-//            picker.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-//            picker.topAnchor.constraint(equalTo: view.topAnchor),
-//            picker.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-//        ])
-//
-//        // Кнопка "Готово" (или можно оставить только тап по календарю)
-//        navigationItem.rightBarButtonItem = UIBarButtonItem(
-//            title: "Готово",
-//            style: .done,
-//            target: self,
-//            action: #selector(didTapDone)
-//        )
-//    }
-//
-//    @objc private func didTapDone() {
-//        onPick?(picker.date)
-//        dismiss(animated: true)
-//    }
-//}
