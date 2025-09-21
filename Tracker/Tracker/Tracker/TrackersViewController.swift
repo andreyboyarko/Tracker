@@ -427,6 +427,13 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
 // MARK: - «Плюс-кружок» в карточке
 extension TrackersViewController: TrackerCellDelegate {
     func didTapComplete(for tracker: Tracker) {
+        // Если дата в будущем — просто ничего не делаем
+        if currentDate > Date() {
+            collectionView.reloadData() // обновим, чтобы кнопка осталась «+»
+            return
+        }
+
+        // Если дата сегодняшняя или прошлая — работаем как раньше
         if let idx = completedTrackers.firstIndex(where: {
             $0.id == tracker.id && Calendar.current.isDate($0.date, inSameDayAs: currentDate)
         }) {
@@ -434,6 +441,7 @@ extension TrackersViewController: TrackerCellDelegate {
         } else {
             completedTrackers.append(TrackerRecord(id: tracker.id, date: currentDate))
         }
+
         collectionView.reloadData()
     }
 }
@@ -457,3 +465,4 @@ private extension UIColor {
         )
     }
 }
+
