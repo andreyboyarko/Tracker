@@ -36,7 +36,7 @@ final class SplashViewController: UIViewController {
             return
         }
         
-        let controller = TabBarController() 
+        let controller = TabBarController(coreDataStack: sceneDelegate.core)
         
         window.rootViewController = controller
         window.makeKeyAndVisible()

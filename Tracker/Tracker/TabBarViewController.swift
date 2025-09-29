@@ -2,11 +2,26 @@ import UIKit
 
 final class TabBarController: UITabBarController {
 
+    // хранить стек в таббаре (если нужно прокидывать дальше)
+    private let coreDataStack: CoreDataStack
+
+    // 🔹 DI через init
+    init(coreDataStack: CoreDataStack) {
+        self.coreDataStack = coreDataStack
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let trackersVC = TrackersViewController()
+        // передаём стек в корневой контроллер «Трекеры»
+        let trackersVC = TrackersViewController(coreDataStack: coreDataStack)
+
         let trackersImg = UIImage(named: "trackers")?.withRenderingMode(.alwaysTemplate)
         trackersVC.tabBarItem = UITabBarItem(
             title: "Трекеры",
@@ -23,16 +38,11 @@ final class TabBarController: UITabBarController {
             selectedImage: statsImg
         )
 
-        // Цвета таббара
-        tabBar.tintColor = UIColor(named: "blue") ?? .systemBlue          // активная
-        tabBar.unselectedItemTintColor = UIColor(named: "ybGray") ?? .systemGray // неактивная
-
         let nav1 = UINavigationController(rootViewController: trackersVC)
         let nav2 = UINavigationController(rootViewController: statsVC)
-
         viewControllers = [nav1, nav2]
 
-        // Цвета таббара: активный — blue из Assets, неактивный — ybGray
+        // оформление таббара
         tabBar.tintColor = UIColor(named: "blue") ?? .systemBlue
         tabBar.unselectedItemTintColor = UIColor(named: "ybGray") ?? .systemGray
 

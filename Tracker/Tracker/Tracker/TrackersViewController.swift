@@ -13,6 +13,24 @@ final class TrackersViewController: UIViewController {
     private var currentDate = Date()
     private let datePopoverDelegate = DatePopoverDelegate() // делегат для поповера
     
+    
+    private var coreDataStack: CoreDataStack!   // хранит стек
+
+    // 🔹 DI через init
+    init(coreDataStack: CoreDataStack) {
+            self.coreDataStack = coreDataStack
+            super.init(nibName: nil, bundle: nil)
+        }
+
+    required init?(coder: NSCoder) {
+           super.init(coder: coder)
+       }
+    
+    /// Поздняя инъекция на случай storyboard/xib
+        func inject(coreDataStack: CoreDataStack) {
+            self.coreDataStack = coreDataStack
+        }
+    
     // фильтр
     private let filtersButton: UIButton = {
         let b = UIButton(type: .system)
@@ -72,7 +90,10 @@ final class TrackersViewController: UIViewController {
         setupEmptyState()
         setupCollectionView()
         setupFiltersButton()
-
+        
+        // Пример доступа:
+        let context = coreDataStack.viewContext
+        assert(coreDataStack != nil, "CoreDataStack must be injected before using TrackersViewController")
         applyFilterForCurrentDate()
     }
 
