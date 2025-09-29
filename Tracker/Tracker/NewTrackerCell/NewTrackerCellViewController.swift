@@ -97,6 +97,7 @@ final class NewTrackerCellViewController: UIViewController {
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
         cv.isScrollEnabled = false
+        cv.clipsToBounds = false // важно, чтобы обводка не резалась
         cv.dataSource = self
         cv.delegate = self
         cv.translatesAutoresizingMaskIntoConstraints = false
@@ -529,12 +530,20 @@ private final class EmojiCell: UICollectionViewCell {
 
 private final class ColorCell: UICollectionViewCell {
     static let reuseId = "ColorCell"
+
     private let swatch = UIView()
+    private let ringLayer = CAShapeLayer() // внешний полупрозрачный контур
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        swatch.layer.cornerRadius = 8
+
+        // сам квадрат цвета — без отступов, на всю ячейку
         swatch.translatesAutoresizingMaskIntoConstraints = false
+        swatch.layer.cornerRadius = 8
+        swatch.layer.cornerCurve = .continuous
+        swatch.layer.borderColor = UIColor.white.cgColor   // белая внутренняя рамка (появится при selected)
+        swatch.layer.borderWidth = 0
+
         contentView.addSubview(swatch)
         NSLayoutConstraint.activate([
             swatch.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -542,13 +551,41 @@ private final class ColorCell: UICollectionViewCell {
             swatch.topAnchor.constraint(equalTo: contentView.topAnchor),
             swatch.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
-        layer.masksToBounds = true
+
+        // внешний «ринг» рисуем слоем, чтобы не трогать размер свотча
+        ringLayer.fillColor = UIColor.clear.cgColor
+        ringLayer.lineWidth = 4           // по 2 pt наружу и внутрь контура
+        ringLayer.isHidden = true         // виден только при selected
+        ringLayer.lineJoin = .round
+        ringLayer.lineCap = .round
+        contentView.layer.addSublayer(ringLayer)
+
+        // важно: ничего не клипуем, чтобы штрих мог выходить наружу
+        contentView.layer.masksToBounds = false
+        layer.masksToBounds = false
     }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        // путь для внешнего контура: чуть больше свотча, чтобы штрих вышел наружу
+        // свотч = 8 corner → у ринга сделаем на 2pt больше
+        let ringRect = contentView.bounds.insetBy(dx: -2, dy: -2)
+        let ringCorner: CGFloat = 10
+        ringLayer.frame = contentView.bounds
+        ringLayer.path = UIBezierPath(roundedRect: ringRect, cornerRadius: ringCorner).cgPath
+    }
 
     func configure(color: UIColor, selected: Bool) {
         swatch.backgroundColor = color
-        layer.borderWidth = selected ? 2 : 0
-        layer.borderColor = selected ? UIColor.white.cgColor : UIColor.clear.cgColor
+
+        // внутренняя белая рамка
+        swatch.layer.borderWidth = selected ? 2 : 0
+
+        // внешний полупрозрачный ринг
+        ringLayer.strokeColor = color.withAlphaComponent(0.30).cgColor
+        ringLayer.isHidden = !selected
     }
 }
