@@ -1,51 +1,42 @@
 
-import Foundation
-
-import Foundation
+import UIKit
 
 struct Tracker: Hashable {
     let id: UUID
-    let name: String
-    let colorHex: String
+    let title: String
+    let color: UIColor
     let emoji: String
-    let schedule: Set<WeekdaysEnum>
+    let weekdays: [WeekdaysEnum]
 
     init(
         id: UUID = UUID(),
-        name: String,
-        colorHex: String,
+        title: String,
+        color: UIColor,
         emoji: String,
-        schedule: Set<WeekdaysEnum>
+        weekdays: [WeekdaysEnum]
     ) {
         self.id = id
-        self.name = name
-        self.colorHex = colorHex
+        self.title = title
+        self.color = color
         self.emoji = emoji
-        self.schedule = schedule
+        self.weekdays = weekdays
     }
 }
-//import Foundation
-//
-//public struct Tracker: Codable, Hashable {
-//    public let id: UUID
-//    public let name: String
-//    
-//    public let colorHex: String
-//    public let emoji: String
-//  
-//    public let schedule: Set<Weekday>
-//
-//    public init(
-//        id: UUID = UUID(),
-//        name: String,
-//        colorHex: String,
-//        emoji: String,
-//        schedule: Set<Weekday>
-//    ) {
-//        self.id = id
-//        self.name = name
-//        self.colorHex = colorHex
-//        self.emoji = emoji
-//        self.schedule = schedule
-//    }
-//}
+
+extension TrackerCoreData {
+    func toDomain() -> Tracker {
+        let color = UIColor(hex6: colorHex ?? "#999999") ?? .black
+
+        // в БД хранится битовая маска (Set<WeekdaysEnum>), а в модели — массив
+        let daysSet: Set<WeekdaysEnum> = WeekdayMask.toSet(UInt16(scheduleMask))
+        let days: [WeekdaysEnum] = Array(daysSet)  // можно отсортировать, если нужно
+
+        return Tracker(
+            id: id ?? UUID(),
+            title: name ?? "",
+            color: color,
+            emoji: emoji ?? "🙂",
+            weekdays: days
+        )
+    }
+}

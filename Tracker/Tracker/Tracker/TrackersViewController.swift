@@ -1,54 +1,39 @@
-
 import UIKit
 
 final class TrackersViewController: UIViewController {
 
-    // MARK: - UI (твой каркас)
+    // MARK: - DI
+    private var coreDataStack: CoreDataStack!
+    
+    init(coreDataStack: CoreDataStack) {
+        self.coreDataStack = coreDataStack
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        if coreDataStack == nil,
+           let sd = (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate) {
+            coreDataStack = sd.core
+        }
+        if coreDataStack == nil {
+            coreDataStack = CoreDataStack(modelName: "TrackerModel")
+        }
+    }
+    
+    // MARK: - UI
     private let searchField = UISearchTextField()
     private var searchTopConstraint: NSLayoutConstraint!
 
-    // Дата (пилюля)
     private var dateContainer: UIView!
     private var dateLabel: UILabel!
     private var currentDate = Date()
-    private let datePopoverDelegate = DatePopoverDelegate() // делегат для поповера
-    
-    
-    private var coreDataStack: CoreDataStack!   // хранит стек
+    private let datePopoverDelegate = DatePopoverDelegate()
 
-    // 🔹 DI через init
-    init(coreDataStack: CoreDataStack) {
-            self.coreDataStack = coreDataStack
-            super.init(nibName: nil, bundle: nil)
-        }
-
-    required init?(coder: NSCoder) {
-           super.init(coder: coder)
-       }
-    
-    /// Поздняя инъекция на случай storyboard/xib
-        func inject(coreDataStack: CoreDataStack) {
-            self.coreDataStack = coreDataStack
-        }
-    
-    // фильтр
-    private let filtersButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.configuration = nil
-        b.setTitle("Фильтры", for: .normal)
-        b.setTitleColor(.white, for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-        b.backgroundColor = UIColor(named: "blue") // твой ассет
-        b.layer.cornerRadius = 16
-        b.layer.masksToBounds = true
-        b.contentEdgeInsets = .init(top: 6, left: 20, bottom: 6, right: 20) // авто-ширина
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
-    }()
     // Коллекция
     private var collectionView: UICollectionView!
 
-    // MARK: - ДАННЫЕ
+    // MARK: - ДАННЫЕ (как у тебя)
     private var categories: [TrackerCategory] = [
         TrackerCategory(title: "Домашний уют", trackers: [
             Tracker(id: UUID(), title: "Поливать растения", color: .ybColor3, emoji: "", weekdays: [.friday, .wednesday]),
@@ -66,16 +51,20 @@ final class TrackersViewController: UIViewController {
 
     // Пустое состояние
     private var emptyStack: UIStackView!
-    
-    private func setupFiltersButton() {
-        view.addSubview(filtersButton)
-        NSLayoutConstraint.activate([
-            filtersButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            filtersButton.heightAnchor.constraint(equalToConstant: 52),
-            filtersButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 160)
-        ])
-    }
+
+    private let filtersButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.configuration = nil
+        b.setTitle("Фильтры", for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        b.backgroundColor = UIColor(named: "blue")
+        b.layer.cornerRadius = 16
+        b.layer.masksToBounds = true
+        b.contentEdgeInsets = .init(top: 6, left: 20, bottom: 6, right: 20)
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -90,10 +79,10 @@ final class TrackersViewController: UIViewController {
         setupEmptyState()
         setupCollectionView()
         setupFiltersButton()
-        
-        // Пример доступа:
-        let context = coreDataStack.viewContext
-        assert(coreDataStack != nil, "CoreDataStack must be injected before using TrackersViewController")
+
+        // пример доступа, всё ок — стек уже есть
+        _ = coreDataStack.viewContext
+
         applyFilterForCurrentDate()
     }
 
@@ -102,7 +91,7 @@ final class TrackersViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
 
-        let titleColor = UIColor(hex: "color") ?? .label
+        let titleColor = UIColor(named: "color") ?? .label
 
         let ap = UINavigationBarAppearance()
         ap.configureWithOpaqueBackground()
@@ -128,30 +117,26 @@ final class TrackersViewController: UIViewController {
     // MARK: - Left: Plus
     private func setupLeftPlus() {
         let plusButton = UIButton(type: .system)
-        plusButton.configuration = nil // чтобы инsets работали
-
+        plusButton.configuration = nil
         let image = UIImage(named: "Plus")?.withRenderingMode(.alwaysTemplate)
         plusButton.setImage(image, for: .normal)
         plusButton.tintColor = .label
-
         plusButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             plusButton.widthAnchor.constraint(equalToConstant: 42),
             plusButton.heightAnchor.constraint(equalToConstant: 42)
         ])
-
         plusButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: -10, bottom: 0, right: 10)
         plusButton.imageView?.contentMode = .center
-
         plusButton.addTarget(self, action: #selector(didTapAdd), for: .touchUpInside)
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: plusButton)
     }
 
-    // MARK: - Right: пилюля даты + тап → поповер
+    // MARK: - Right: дата-пилюля + поповер
     private func setupRightDate() {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor(hex: "#F0F0F0")
+        container.backgroundColor = UIColor(named: "ybGray")
         container.layer.cornerRadius = 8
         container.directionalLayoutMargins = .init(top: 6, leading: 12, bottom: 6, trailing: 12)
 
@@ -161,7 +146,7 @@ final class TrackersViewController: UIViewController {
         label.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.9
-        label.text = Self.formatDate(currentDate) // формат: 19.09.25
+        label.text = Self.formatDate(currentDate)
 
         container.addSubview(label)
         NSLayoutConstraint.activate([
@@ -184,7 +169,6 @@ final class TrackersViewController: UIViewController {
     }
 
     @objc private func showDatePicker() {
-        // Используем существующий VC
         let vc = DatePickerViewController()
         vc.initialDate = currentDate
         vc.onPick = { [weak self] newDate in
@@ -193,17 +177,14 @@ final class TrackersViewController: UIViewController {
             self.dateLabel.text = Self.formatDate(newDate)
             self.applyFilterForCurrentDate()
         }
-
         vc.modalPresentationStyle = .popover
         vc.preferredContentSize = CGSize(width: 320, height: 360)
-
         if let pop = vc.popoverPresentationController {
             pop.sourceView = dateContainer
             pop.sourceRect = dateContainer.bounds
             pop.permittedArrowDirections = [.up, .down]
-            pop.delegate = datePopoverDelegate // чтобы не развернулся во фулл-скрин
+            pop.delegate = datePopoverDelegate
         }
-
         present(vc, animated: true)
     }
 
@@ -216,8 +197,15 @@ final class TrackersViewController: UIViewController {
     // MARK: - Search field
     private func setupSearchField() {
         searchField.placeholder = "Поиск"
-        searchField.backgroundColor = UIColor(hex: "ybGray")
+
+        // ВАЖНО: иначе системный стиль может перекрывать твой фон
+        searchField.borderStyle = .none
         searchField.layer.cornerRadius = 10
+        searchField.clipsToBounds = true
+
+        let ybGray = UIColor(named: "ybGray") ?? UIColor(hex6: "#AEAFB4")!
+        searchField.backgroundColor = ybGray
+
         searchField.font = .systemFont(ofSize: 17)
         searchField.leftView = UIImageView(image: UIImage(systemName: "magnifyingglass"))
         searchField.leftViewMode = .always
@@ -226,7 +214,9 @@ final class TrackersViewController: UIViewController {
         view.addSubview(searchField)
         searchField.translatesAutoresizingMaskIntoConstraints = false
 
-        searchTopConstraint = searchField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6)
+        searchTopConstraint = searchField.topAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6
+        )
 
         NSLayoutConstraint.activate([
             searchTopConstraint,
@@ -235,7 +225,6 @@ final class TrackersViewController: UIViewController {
             searchField.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
-
     // MARK: - Empty state
     private func setupEmptyState() {
         let img = UIImageView(image: UIImage(named: "error"))
@@ -278,7 +267,7 @@ final class TrackersViewController: UIViewController {
         collectionView.backgroundColor = .systemBackground
         collectionView.dataSource = self
         collectionView.delegate = self
-        collectionView.isHidden = true // по умолчанию пусто
+        collectionView.isHidden = true
 
         collectionView.register(TrackerViewCell.self, forCellWithReuseIdentifier: TrackerViewCell.identifier)
         collectionView.register(TrackerSectionHeader.self,
@@ -291,6 +280,16 @@ final class TrackersViewController: UIViewController {
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+    }
+    
+    private func setupFiltersButton() {
+        view.addSubview(filtersButton)
+        NSLayoutConstraint.activate([
+            filtersButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            filtersButton.heightAnchor.constraint(equalToConstant: 52),
+            filtersButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 160)
         ])
     }
 
@@ -311,11 +310,8 @@ final class TrackersViewController: UIViewController {
     }
 
     // MARK: - Открываем экран выбора типа трекера
-    
     @objc private func didTapAdd() {
         let add = TrackerAddViewController()
-
-        // колбэк — как у тебя/коллеги
         add.onTrackerAdded = { [weak self] item in
             guard let self, let tracker = item.trackers.first else { return }
             if let idx = self.categories.firstIndex(where: { $0.title == item.title }) {
@@ -354,10 +350,16 @@ final class TrackersViewController: UIViewController {
 
         present(nav, animated: true)
     }
+
     // MARK: - Подгоняем отступ поиска под большой заголовок
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         adjustSearchTopToLargeTitle()
+
+        // чтобы коллекция не пряталась под кнопкой
+        let extraBottom: CGFloat = 68
+        collectionView.contentInset.bottom = extraBottom
+        collectionView.scrollIndicatorInsets.bottom = extraBottom
     }
 
     private func adjustSearchTopToLargeTitle() {
@@ -372,7 +374,6 @@ final class TrackersViewController: UIViewController {
 
         let labelBottomInView = navBar.convert(titleLabel.frame, to: view).maxY
         let safeTop = view.safeAreaLayoutGuide.layoutFrame.minY
-        
         let wanted = max(0, (labelBottomInView - safeTop) + 7)
         searchTopConstraint.constant = wanted
         view.layoutIfNeeded()
@@ -421,9 +422,9 @@ extension TrackersViewController: UICollectionViewDataSource {
         let tracker = filteredCategories[indexPath.section].trackers[indexPath.item]
 
         let isCompleted = completedTrackers.contains {
-            $0.id == tracker.id && Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+            $0.trackerId == tracker.id && Calendar.current.isDate($0.date, inSameDayAs: currentDate)
         }
-        let count = completedTrackers.filter { $0.id == tracker.id }.count
+        let count = completedTrackers.filter { $0.trackerId == tracker.id }.count
 
         cell.delegate = self
         cell.configure(with: tracker, isCompleted: isCompleted, count: count)
@@ -435,7 +436,6 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        
         let spacing: CGFloat = 9
         let columns: CGFloat = 2
         let totalSpacing = spacing * (columns - 1)
@@ -448,42 +448,23 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
 // MARK: - «Плюс-кружок» в карточке
 extension TrackersViewController: TrackerCellDelegate {
     func didTapComplete(for tracker: Tracker) {
-        // Если дата в будущем — просто ничего не делаем
         if currentDate > Date() {
-            collectionView.reloadData() // обновим, чтобы кнопка осталась «+»
+            collectionView.reloadData()
             return
         }
 
-        // Если дата сегодняшняя или прошлая — работаем как раньше
         if let idx = completedTrackers.firstIndex(where: {
-            $0.id == tracker.id && Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+            $0.trackerId == tracker.id && Calendar.current.isDate($0.date, inSameDayAs: currentDate)
         }) {
             completedTrackers.remove(at: idx)
         } else {
-            completedTrackers.append(TrackerRecord(id: tracker.id, date: currentDate))
+            completedTrackers.append(TrackerRecord(trackerId: tracker.id, date: currentDate))
         }
 
         collectionView.reloadData()
     }
 }
 
-// Делегат только для поповера — чтобы на iPhone не стал фулл-скрином
 private final class DatePopoverDelegate: NSObject, UIPopoverPresentationControllerDelegate {
     func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle { .none }
 }
-
-// MARK: - HEX helper 
-private extension UIColor {
-    convenience init?(hex: String) {
-        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "#", with: "")
-        guard s.count == 6, let v = UInt32(s, radix: 16) else { return nil }
-        self.init(
-            red:   CGFloat((v >> 16) & 0xFF) / 255,
-            green: CGFloat((v >>  8) & 0xFF) / 255,
-            blue:  CGFloat( v        & 0xFF) / 255,
-            alpha: 1
-        )
-    }
-}
-
