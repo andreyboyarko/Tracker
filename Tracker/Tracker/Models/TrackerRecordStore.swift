@@ -1,71 +1,113 @@
-
-
 import CoreData
 
-// MARK: - Абстракция
 protocol TrackerRecordStoring: AnyObject {
+    var onChange: (() -> Void)? { get set }
+    func records() throws -> [TrackerRecord]
     func add(_ record: TrackerRecord) throws
-    func remove(_ record: TrackerRecord) throws
-    func isCompleted(_ id: UUID, on date: Date) throws -> Bool
-    func completedCount(for id: UUID) throws -> Int
+    func remove(for trackerID: UUID, on date: Date) throws
+    func count(for trackerID: UUID) throws -> Int
+    func hasRecord(for trackerID: UUID, on date: Date) throws -> Bool
 }
 
-// MARK: - Реализация
-final class TrackerRecordStore: TrackerRecordStoring {
+final class TrackerRecordStore: NSObject, TrackerRecordStoring {
     private let stack: CoreDataStack
+    var onChange: (() -> Void)?
 
-    init(stack: CoreDataStack) { self.stack = stack }
+    private lazy var frc: NSFetchedResultsController<TrackerRecordCoreData> = {
+        let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
+        // сортируем по дате для предсказуемости
+        req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        let frc = NSFetchedResultsController(
+            fetchRequest: req,
+            managedObjectContext: stack.viewContext,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        frc.delegate = self
+        try? frc.performFetch()
+        return frc
+    }()
+
+    init(stack: CoreDataStack) {
+        self.stack = stack
+        super.init()
+        _ = frc
+    }
+
+    func records() throws -> [TrackerRecord] {
+        (frc.fetchedObjects ?? []).map { $0.toDomain() }
+    }
 
     func add(_ record: TrackerRecord) throws {
         let ctx = stack.viewContext
 
-        guard let trackerObj = try fetchTrackerCoreData(id: record.trackerId, in: ctx) else { return }
+        let rec = TrackerRecordCoreData(context: ctx)
+        rec.id   = UUID() // это id самой записи, не трекера
+        rec.date = Calendar.current.startOfDay(for: record.date)
 
-        let obj = TrackerRecordCoreData(context: ctx)
-        obj.id = UUID()
-        obj.date = Calendar.current.startOfDay(for: record.date)
-        obj.tracker = trackerObj
+        // находим связанный TrackerCoreData по trackerId
+        let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
+        req.predicate = NSPredicate(format: "id == %@", record.trackerId as CVarArg)
+
+        guard let trackerObj = try ctx.fetch(req).first else {
+            // если трекер не найден, это логическая ошибка – решай, как обрабатывать
+            return
+        }
+        rec.tracker = trackerObj
+
         try ctx.save()
     }
 
-    func remove(_ record: TrackerRecord) throws {
+    func remove(for trackerID: UUID, on date: Date) throws {
         let ctx = stack.viewContext
-        let date = Calendar.current.startOfDay(for: record.date)
+        let start = Calendar.current.startOfDay(for: date)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
 
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
-        req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "tracker.id == %@", record.trackerId as CVarArg),
-            NSPredicate(format: "date == %@", date as NSDate)
-        ])
-        if let obj = try ctx.fetch(req).first {
-            ctx.delete(obj)
+        req.predicate = NSPredicate(
+            format: "tracker.id == %@ AND date >= %@ AND date < %@",
+            trackerID as CVarArg, start as CVarArg, end as CVarArg
+        )
+        if let rec = try ctx.fetch(req).first {
+            ctx.delete(rec)
             try ctx.save()
         }
     }
 
-    func isCompleted(_ id: UUID, on date: Date) throws -> Bool {
-        let ctx = stack.viewContext
-        let d = Calendar.current.startOfDay(for: date)
-        let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
-        req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "tracker.id == %@", id as CVarArg),
-            NSPredicate(format: "date == %@", d as NSDate)
-        ])
-        return try ctx.count(for: req) > 0
-    }
-
-    func completedCount(for id: UUID) throws -> Int {
+    func count(for trackerID: UUID) throws -> Int {
         let ctx = stack.viewContext
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "tracker.id == %@", id as CVarArg)
+        req.predicate = NSPredicate(format: "tracker.id == %@", trackerID as CVarArg)
         return try ctx.count(for: req)
     }
 
-    // MARK: - Helpers
+    func hasRecord(for trackerID: UUID, on date: Date) throws -> Bool {
+        let ctx = stack.viewContext
+        let start = Calendar.current.startOfDay(for: date)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
 
-    private func fetchTrackerCoreData(id: UUID, in ctx: NSManagedObjectContext) throws -> TrackerCoreData? {
-        let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-        return try ctx.fetch(req).first
+        let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
+        req.resultType = .countResultType
+        req.predicate = NSPredicate(
+            format: "tracker.id == %@ AND date >= %@ AND date < %@",
+            trackerID as CVarArg, start as CVarArg, end as CVarArg
+        )
+        return (try ctx.count(for: req)) > 0
     }
 }
+
+extension TrackerRecordStore: NSFetchedResultsControllerDelegate {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        onChange?()
+    }
+}
+
+//// Mapping
+//private extension TrackerRecordCoreData {
+//    func toDomain() -> TrackerRecord {
+//        TrackerRecord(
+//            trackerId: tracker?.id ?? UUID(),
+//            date: date ?? Date()
+//        )
+//    }
+//}

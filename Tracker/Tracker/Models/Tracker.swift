@@ -23,20 +23,3 @@ struct Tracker: Hashable {
     }
 }
 
-extension TrackerCoreData {
-    func toDomain() -> Tracker {
-        let color = UIColor(hex6: colorHex ?? "#999999") ?? .black
-
-        // в БД хранится битовая маска (Set<WeekdaysEnum>), а в модели — массив
-        let daysSet: Set<WeekdaysEnum> = WeekdayMask.toSet(UInt16(scheduleMask))
-        let days: [WeekdaysEnum] = Array(daysSet)  // можно отсортировать, если нужно
-
-        return Tracker(
-            id: id ?? UUID(),
-            title: name ?? "",
-            color: color,
-            emoji: emoji ?? "🙂",
-            weekdays: days
-        )
-    }
-}

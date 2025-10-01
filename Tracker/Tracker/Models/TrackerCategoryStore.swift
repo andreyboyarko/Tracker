@@ -1,75 +1,62 @@
-
-
-
 import CoreData
 
-// MARK: - Абстракция
 protocol TrackerCategoryStoring: AnyObject {
+    var onChange: (() -> Void)? { get set }
     func categories() throws -> [TrackerCategory]
-    func create(title: String) throws
-    func delete(title: String) throws
-    func rename(oldTitle: String, to newTitle: String) throws
-
-    // утилита для TrackerStore: получить/создать объект категории
     func ensureCategory(title: String, in ctx: NSManagedObjectContext) throws -> TrackerCategoryCoreData
 }
 
-// MARK: - Реализация
-final class TrackerCategoryStore: TrackerCategoryStoring {
+final class TrackerCategoryStore: NSObject, TrackerCategoryStoring {
     private let stack: CoreDataStack
+    var onChange: (() -> Void)?
 
-    init(stack: CoreDataStack) { self.stack = stack }
-
-    func categories() throws -> [TrackerCategory] {
-        let ctx = stack.viewContext
+    private lazy var frc: NSFetchedResultsController<TrackerCategoryCoreData> = {
         let req: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
         req.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        return try ctx.fetch(req).map { $0.toDomain() }
+        let frc = NSFetchedResultsController(
+            fetchRequest: req,
+            managedObjectContext: stack.viewContext,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        frc.delegate = self
+        try? frc.performFetch()
+        return frc
+    }()
+
+    init(stack: CoreDataStack) {
+        self.stack = stack
+        super.init()
+        _ = frc
     }
 
-    func create(title: String) throws {
-        let ctx = stack.viewContext
-        let obj = TrackerCategoryCoreData(context: ctx)
-        obj.title = title
-        try ctx.save()
+    func categories() throws -> [TrackerCategory] {
+        (frc.fetchedObjects ?? []).map { $0.toDomain() }
     }
 
-    func delete(title: String) throws {
-        let ctx = stack.viewContext
-        let req: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "title == %@", title)
-        if let obj = try ctx.fetch(req).first {
-            ctx.delete(obj)
-            try ctx.save()
-        }
-    }
-
-    func rename(oldTitle: String, to newTitle: String) throws {
-        let ctx = stack.viewContext
-        let req: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "title == %@", oldTitle)
-        if let obj = try ctx.fetch(req).first {
-            obj.title = newTitle
-            try ctx.save()
-        }
-    }
-
+    /// Создаёт или возвращает существующую категорию в указанном контексте
     func ensureCategory(title: String, in ctx: NSManagedObjectContext) throws -> TrackerCategoryCoreData {
         let req: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
         req.predicate = NSPredicate(format: "title == %@", title)
-        if let existing = try ctx.fetch(req).first {
-            return existing
-        }
+        if let exist = try ctx.fetch(req).first { return exist }
         let obj = TrackerCategoryCoreData(context: ctx)
         obj.title = title
         return obj
     }
 }
 
-// MARK: - Mapping
-private extension TrackerCategoryCoreData {
-    func toDomain() -> TrackerCategory {
-        let trackers = (trackers as? Set<TrackerCoreData> ?? []).map { $0.toDomain() }
-        return TrackerCategory(title: title ?? "", trackers: trackers)
+extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        onChange?()
     }
 }
+
+//// Mapping
+//private extension TrackerCategoryCoreData {
+//    func toDomain() -> TrackerCategory {
+//        let trackers = (trackers as? Set<TrackerCoreData> ?? [])
+//            .map { $0.toDomain() }
+//            .sorted { $0.title < $1.title }
+//        return TrackerCategory(title: title ?? "", trackers: trackers)
+//    }
+//}
