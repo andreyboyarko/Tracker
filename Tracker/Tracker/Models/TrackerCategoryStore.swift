@@ -51,12 +51,3 @@ extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
     }
 }
 
-//// Mapping
-//private extension TrackerCategoryCoreData {
-//    func toDomain() -> TrackerCategory {
-//        let trackers = (trackers as? Set<TrackerCoreData> ?? [])
-//            .map { $0.toDomain() }
-//            .sorted { $0.title < $1.title }
-//        return TrackerCategory(title: title ?? "", trackers: trackers)
-//    }
-//}

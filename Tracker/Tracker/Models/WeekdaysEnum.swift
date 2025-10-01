@@ -1,6 +1,5 @@
 
 
-
 enum WeekdaysEnum: String, CaseIterable {
     case sunday = "Воскресенье"
     case monday = "Понедельник"

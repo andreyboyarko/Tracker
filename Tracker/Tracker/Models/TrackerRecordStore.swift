@@ -101,13 +101,3 @@ extension TrackerRecordStore: NSFetchedResultsControllerDelegate {
         onChange?()
     }
 }
-
-//// Mapping
-//private extension TrackerRecordCoreData {
-//    func toDomain() -> TrackerRecord {
-//        TrackerRecord(
-//            trackerId: tracker?.id ?? UUID(),
-//            date: date ?? Date()
-//        )
-//    }
-//}

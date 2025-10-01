@@ -4,7 +4,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-    // Один экземпляр CoreDataStack на всё приложение
     let core = CoreDataStack(modelName: "TrackerModel")
 
     func scene(_ scene: UIScene,

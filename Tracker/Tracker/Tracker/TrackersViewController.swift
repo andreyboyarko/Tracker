@@ -222,36 +222,7 @@ final class TrackersViewController: UIViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
-    
-//    private func setupCollection() {
-//        let layout = UICollectionViewFlowLayout()
-//        layout.minimumInteritemSpacing = cellParams.cellSpacing
-//        layout.minimumLineSpacing = cellParams.cellSpacing
-//        layout.headerReferenceSize = CGSize(width: view.bounds.width, height: 50)
-//        
-//        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-//        collectionView.backgroundColor = .systemBackground
-//        collectionView.translatesAutoresizingMaskIntoConstraints = false
-//        view.addSubview(collectionView)
-//        
-//        collectionView.register(TrackerViewCell.self, forCellWithReuseIdentifier: TrackerViewCell.identifier)
-//        collectionView.register(
-//            TrackerSectionHeader.self,
-//            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
-//            withReuseIdentifier: TrackerSectionHeader.identifier
-//        )
-//        
-//        collectionView.dataSource = self
-//        collectionView.delegate = self
-//        
-//        NSLayoutConstraint.activate([
-//            collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
-//            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: cellParams.leftInset),
-//            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -cellParams.rightInset),
-//            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-//        ])
-//    }
-    
+
     private func setupEmptyState() {
         emptyImage.translatesAutoresizingMaskIntoConstraints = false
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -423,19 +394,3 @@ extension TrackersViewController: UIPopoverPresentationControllerDelegate {
         .none
     }
 }
-// MARK: - Store delegates (если у вас они есть)
-//extension TrackersViewController: TrackerCategoryStoreDelegate, TrackerStoreDelegate {
-//    func didInsertSections(_ sections: IndexSet) {
-//        collectionView.performBatchUpdates {
-//            collectionView.insertSections(sections)
-//        }
-//    }
-//
-//    func didInsertTracker(to categoryTitle: String) {
-//        if let s = filteredCategories.firstIndex(where: { $0.title == categoryTitle }) {
-//            collectionView.reloadSections([s])
-//        } else {
-//            collectionView.reloadData()
-//        }
-//    }
-//}

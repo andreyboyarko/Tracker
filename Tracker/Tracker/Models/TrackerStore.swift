@@ -102,17 +102,3 @@ extension TrackerStore: NSFetchedResultsControllerDelegate {
     }
 }
 
-//// Mapping
-//private extension TrackerCoreData {
-//   func toDomain() -> Tracker {
-//        let uiColor = UIColor(hex6: colorHex ?? "#999999") ?? .systemGray
-//        let days = Array(WeekdayMask.toSet(UInt16(scheduleMask)))
-//        return Tracker(
-//            id: id ?? UUID(),
-//            title: name ?? "",
-//            color: uiColor,
-//            emoji: emoji ?? "🙂",
-//            weekdays: days
-//        )
-//    }
-//}
