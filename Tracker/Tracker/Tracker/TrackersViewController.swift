@@ -10,14 +10,12 @@ final class TrackersViewController: UIViewController {
     // MARK: - Data
     private var categories: [TrackerCategory] = []
     private var filteredCategories: [TrackerCategory] = []
-    private var completedTrackers: [TrackerRecord] = []
-    
-//    private weak var datePicker: UIDatePicker?
+  
     private let dateLabel = UILabel()
     private let datePicker = UIDatePicker()
     private let dateChip = UIButton(type: .system)
     
-    private var dateContainer: UIView!
+    private var dateContainer: UIView?
     private var currentDate = Date()
     
     // MARK: - UI
@@ -27,14 +25,14 @@ final class TrackersViewController: UIViewController {
         layout.minimumInteritemSpacing = cellParams.cellSpacing
         layout.minimumLineSpacing = cellParams.cellSpacing
         layout.headerReferenceSize = CGSize(width: view.bounds.width, height: 50)
-
+        
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .systemBackground
         cv.translatesAutoresizingMaskIntoConstraints = false
-
+        
         cv.dataSource = self
         cv.delegate = self
-
+        
         cv.register(TrackerViewCell.self,
                     forCellWithReuseIdentifier: TrackerViewCell.identifier)
         cv.register(TrackerSectionHeader.self,
@@ -60,12 +58,12 @@ final class TrackersViewController: UIViewController {
         didSet {
             applyFilterForSelectedDate()
             let hasData = !filteredCategories.isEmpty
-
-            collectionView.isHidden = !hasData   // без ?
+            
+            collectionView.isHidden = !hasData
             emptyImage.isHidden = hasData
             emptyLabel.isHidden = hasData
-
-            collectionView.reloadData()          // без ?
+            
+            collectionView.reloadData()
         }
     }
     
@@ -79,19 +77,8 @@ final class TrackersViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
     
-    required convenience init?(coder: NSCoder) {
-        // Собираем зависимости так же, как в TabBar/SceneDelegate
-        let core = CoreDataStack(modelName: "TrackerModel")
-        let categoryStore = TrackerCategoryStore(stack: core)
-        let trackerStore  = TrackerStore(stack: core, categoryStore: categoryStore)
-        let recordStore   = TrackerRecordStore(stack: core)
-
-        self.init(
-            categoryStore: categoryStore,
-            trackerStore: trackerStore,
-            recordStore: recordStore
-        )
-    }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Use DI init") }
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -99,34 +86,26 @@ final class TrackersViewController: UIViewController {
         view.backgroundColor = .systemBackground
         emptyImage.isHidden = true
         emptyLabel.isHidden = true
-
+        
         // Навбар
         navigationItem.title = "Трекеры"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
-
+        
         // Кнопка "+"
         setupLeftPlusBold()
-
+        
         // UI
         setupSearchBar()        // важно: чип даты берет цвет фона из searchBar
         setupCollection()
         setupEmptyState()
         setupRightDateChip()    // появляется прямоугольник с датой
-
-        // ДАННЫЕ
-        do {
-            categories = try categoryStore.categories()
-        } catch {
-            categories = []
-            assertionFailure("Не удалось загрузить категории: \(error)")
-        }
-
+        
         // Подписки на обновления стора (NSFetchedResultsController дергает onChange)
-        categoryStore.onChange = { [weak self] in self?.reloadFromStores() }
+        //        categoryStore.onChange = { [weak self] in self?.reloadFromStores() }
         trackerStore.onChange  = { [weak self] in self?.reloadFromStores() }
         recordStore.onChange   = { [weak self] in self?.reloadFromStores() }
-
+        
         // Стартовые значения/рендер
         selectedDate = Date()   // триггерит фильтр под сегодняшнюю дату
         reloadFromStores()
@@ -156,11 +135,11 @@ final class TrackersViewController: UIViewController {
         container.layer.cornerRadius = 8
         container.layer.cornerCurve = .continuous
         container.directionalLayoutMargins = .init(top: 6, leading: 12, bottom: 6, trailing: 12)
-
+        
         dateLabel.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
         dateLabel.textColor = .label
         dateLabel.text = Self.formatDate(currentDate)
-
+        
         container.addSubview(dateLabel)
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -170,21 +149,21 @@ final class TrackersViewController: UIViewController {
             dateLabel.bottomAnchor.constraint(equalTo: container.layoutMarginsGuide.bottomAnchor),
             container.heightAnchor.constraint(equalToConstant: 34)
         ])
-
+        
         container.isUserInteractionEnabled = true
         container.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(showInlineCalendar)))
-
+        
         self.dateContainer = container
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: container)
     }
-
+    
     private static func formatDate(_ date: Date) -> String {
         let df = DateFormatter()
         df.locale = Locale(identifier: "ru_RU")
         df.dateFormat = "dd.MM.yy"
         return df.string(from: date)
     }
-
+    
     @objc private func showInlineCalendar() {
         let vc = DatePickerViewController()
         vc.initialDate = currentDate
@@ -193,23 +172,28 @@ final class TrackersViewController: UIViewController {
             guard let self else { return }
             self.currentDate = newDate
             self.dateLabel.text = Self.formatDate(newDate)
-            self.selectedDate = newDate      // перефильтровать и перерисовать коллекцию
+            self.selectedDate = newDate
         }
-
+        
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .popover
         nav.preferredContentSize = CGSize(width: 320, height: 360)
-
+        
         if let pop = nav.popoverPresentationController {
-            pop.sourceView = dateContainer
-            pop.sourceRect = dateContainer.bounds
-            pop.permittedArrowDirections = [.up, .down]
-            pop.delegate = self              // ← без этого iPhone развернёт на весь экран
+            if let anchor = dateContainer {
+                pop.sourceView = anchor
+                pop.sourceRect = anchor.bounds
+                pop.permittedArrowDirections = [.up, .down]
+            } else {
+                // запасной вариант: привязаться к правой кнопке, если вдруг контейнера нет
+                pop.barButtonItem = navigationItem.rightBarButtonItem
+            }
+            pop.delegate = self
         }
-
+        
         present(nav, animated: true)
     }
-
+    
     
     // MARK: -
     
@@ -222,7 +206,7 @@ final class TrackersViewController: UIViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
-
+    
     private func setupEmptyState() {
         emptyImage.translatesAutoresizingMaskIntoConstraints = false
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -244,12 +228,30 @@ final class TrackersViewController: UIViewController {
     }
     
     private func reloadFromStores() {
-        let pairs = (try? trackerStore.snapshot()) ?? []
-        let grouped = Dictionary(grouping: pairs, by: { $0.categoryTitle })
-            .map { TrackerCategory(title: $0.key, trackers: $0.value.map { $0.tracker }) }
-            .sorted { $0.title < $1.title }
-        self.categories = grouped
+        do {
+            let pairs = try trackerStore.snapshot()
+            let grouped = Dictionary(grouping: pairs, by: { $0.categoryTitle })
+                .map { key, value in
+                    TrackerCategory(
+                        title: key,
+                        trackers: value.map { $0.tracker }.sorted { $0.title < $1.title }
+                    )
+                }
+                .sorted { $0.title < $1.title }
+            
+            self.categories = grouped
+            applyFilterForSelectedDate()
+            
+            let hasData = !filteredCategories.isEmpty
+            collectionView.isHidden = !hasData
+            emptyImage.isHidden = hasData
+            emptyLabel.isHidden = hasData
+            collectionView.reloadData()
+        } catch {
+            print("snapshot error:", error)
+        }
     }
+    
     // MARK: - Actions (добавь рядом с addTrackerTapped)
     @objc private func pickedDate(_ sender: UIDatePicker) {
         selectedDate = sender.date   // триггерит didSet → фильтр + reload
@@ -260,22 +262,10 @@ final class TrackersViewController: UIViewController {
         let add = TrackerAddViewController()
         add.onTrackerAdded = { [weak self] item in
             guard let self, let tracker = item.trackers.first else { return }
-
-            if let idx = self.categories.firstIndex(where: { $0.title == item.title }) {
-                var arr = self.categories[idx].trackers
-                arr.append(tracker)
-                self.categories[idx] = TrackerCategory(title: item.title, trackers: arr)
-            } else {
-                self.categories.append(item)   // просто обновляем локальный снимок для UI
-            }
-
-            // Создаём запись в Core Data (категория будет создана/найдена внутри)
             try? self.trackerStore.create(tracker, categoryTitle: item.title)
-
-            self.applyFilterForSelectedDate()
-            self.collectionView.reloadData()
+            // дальше onChange → reloadFromStores()
         }
-
+        
         let nav = UINavigationController(rootViewController: add)
         nav.modalPresentationStyle = .pageSheet
         present(nav, animated: true)
@@ -284,7 +274,7 @@ final class TrackersViewController: UIViewController {
     private func applyFilterForSelectedDate() {
         let weekdayIndex = Calendar.current.component(.weekday, from: selectedDate)
         let selectedWeekday = WeekdaysEnum.allCases[weekdayIndex - 1]
-
+        
         filteredCategories = categories.compactMap { cat in
             let items = cat.trackers.filter { $0.weekdays.contains(selectedWeekday) }
             return items.isEmpty ? nil : TrackerCategory(title: cat.title, trackers: items)
@@ -296,13 +286,13 @@ final class TrackersViewController: UIViewController {
     private func setupLeftPlusBold() {
         let btn = UIButton(type: .system)
         btn.configuration = nil
-
+        
         // жирный плюс
         let cfg = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold, scale: .medium)
         let img = UIImage(systemName: "plus", withConfiguration: cfg)?.withRenderingMode(.alwaysTemplate)
         btn.setImage(img, for: .normal)
         btn.tintColor = .label
-
+        
         btn.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             btn.widthAnchor.constraint(equalToConstant: 42),
@@ -311,7 +301,7 @@ final class TrackersViewController: UIViewController {
         btn.imageView?.contentMode = .center
         btn.contentEdgeInsets = .init(top: 0, left: -10, bottom: 0, right: 10)
         btn.addTarget(self, action: #selector(addTrackerTapped), for: .touchUpInside)
-
+        
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: btn)
     }
     
@@ -320,18 +310,18 @@ final class TrackersViewController: UIViewController {
         guard selectedDate <= Date() else { return }
         let tracker = filteredCategories[indexPath.section].trackers[indexPath.item]
         
-        if let i = completedTrackers.firstIndex(where: {
-            $0.trackerId == tracker.id &&
-            Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
-        }) {
-            completedTrackers.remove(at: i)
-        } else {
-            completedTrackers.append(TrackerRecord(trackerId: tracker.id, date: selectedDate))
+        do {
+            if try recordStore.hasRecord(for: tracker.id, on: selectedDate) {
+                try recordStore.remove(for: tracker.id, on: selectedDate)
+            } else {
+                try recordStore.add(TrackerRecord(trackerId: tracker.id, date: selectedDate))
+            }
+            collectionView.reloadItems(at: [indexPath])
+        } catch {
+            print("toggle record error:", error)
         }
-        collectionView.reloadItems(at: [indexPath])
     }
 }
-
 // MARK: - UICollectionViewDataSource
 extension TrackersViewController: UICollectionViewDataSource {
     func numberOfSections(in collectionView: UICollectionView) -> Int { filteredCategories.count }
@@ -357,17 +347,25 @@ extension TrackersViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(
+        guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: TrackerViewCell.identifier,
             for: indexPath
-        ) as! TrackerViewCell
+        ) as? TrackerViewCell else {
+            return UICollectionViewCell()
+        }
 
         let tracker = filteredCategories[indexPath.section].trackers[indexPath.item]
-        let isCompleted = completedTrackers.contains {
-            $0.trackerId == tracker.id &&
-            Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
+        
+        var isCompleted = false
+        var count = 0
+        do {
+            isCompleted = try recordStore.hasRecord(for: tracker.id, on: selectedDate)
+            count = try recordStore.count(for: tracker.id)
+        } catch {
+            isCompleted = false
+            count = 0
         }
-        let count = completedTrackers.filter { $0.trackerId == tracker.id }.count
+
         cell.configure(with: tracker, isCompleted: isCompleted, count: count)
         return cell
     }

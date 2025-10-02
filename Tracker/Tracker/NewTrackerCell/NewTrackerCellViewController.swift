@@ -66,7 +66,7 @@ final class NewTrackerCellViewController: UIViewController {
         layout.minimumInteritemSpacing = 12
         layout.minimumLineSpacing = 12
         layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        layout.estimatedItemSize = .zero              // выключаем авто-ресайз
+        layout.estimatedItemSize = .zero
 
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
@@ -92,12 +92,12 @@ final class NewTrackerCellViewController: UIViewController {
         layout.minimumInteritemSpacing = 12
         layout.minimumLineSpacing = 12
         layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        layout.estimatedItemSize = .zero              // выключаем авто-ресайз
+        layout.estimatedItemSize = .zero
 
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
         cv.isScrollEnabled = false
-        cv.clipsToBounds = false // важно, чтобы обводка не резалась
+        cv.clipsToBounds = false
         cv.dataSource = self
         cv.delegate = self
         cv.translatesAutoresizingMaskIntoConstraints = false
@@ -122,9 +122,7 @@ final class NewTrackerCellViewController: UIViewController {
         }
     }
 
-    // MARK: - Constraints we update
-    private var emojiHeightC: NSLayoutConstraint!
-    private var colorHeightC: NSLayoutConstraint!
+    // (удалены IUO: emojiHeightC!, colorHeightC!)
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -137,9 +135,12 @@ final class NewTrackerCellViewController: UIViewController {
         setupKeyboardHandling()
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // базовый нижний отступ, чтобы контент не упирался в скругление
         scrollView.contentInset.bottom = 24
         scrollView.scrollIndicatorInsets.bottom = 24
     }
@@ -218,9 +219,9 @@ final class NewTrackerCellViewController: UIViewController {
     }
 
     private func setupLayout() {
-        // фиксированные высоты секций по макету
-        emojiHeightC = emojiCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2) // 3 ряда по 46 + 2 интервала по 12
-        colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 40 * 3 + 12 * 2) // 3 ряда по 40 + 2 интервала по 12
+        // фиксированные высоты секций по макету — локальные констрейнты (без IUO)
+        let emojiHeightC = emojiCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
+        let colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 40 * 3 + 12 * 2)
 
         NSLayoutConstraint.activate([
             // scroll & content
@@ -417,12 +418,22 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if collectionView === emojiCollection {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiCell.reuseId, for: indexPath) as! EmojiCell
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: EmojiCell.reuseId,
+                for: indexPath
+            ) as? EmojiCell else {
+                return UICollectionViewCell()
+            }
             let emoji = emojis[indexPath.item]
             cell.configure(emoji: emoji, selected: (emoji == selectedEmoji))
             return cell
         } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ColorCell.reuseId, for: indexPath) as! ColorCell
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: ColorCell.reuseId,
+                for: indexPath
+            ) as? ColorCell else {
+                return UICollectionViewCell()
+            }
             let color = colors[indexPath.item]
             cell.configure(color: color, selected: (selectedColor?.cgColor == color.cgColor))
             return cell
@@ -441,24 +452,23 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
         }
     }
 
-    //фиксированные размеры
+    // фиксированные размеры
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         if collectionView === emojiCollection {
-            return CGSize(width: 46, height: 46)     // 6 × 3
+            return CGSize(width: 46, height: 46)
         } else {
-            return CGSize(width: 40, height: 40)     // 6 × 3
+            return CGSize(width: 40, height: 40)
         }
     }
-
 
     private func exactSpacing(for collectionView: UICollectionView, itemSide: CGFloat) -> CGFloat {
         let columns: CGFloat = 6
         let horizontalInsets: CGFloat = 16 + 16
         let available = collectionView.bounds.width - horizontalInsets
         let raw = (available - columns * itemSide) / (columns - 1)
-        return max(0, raw) // допускаем значение > 12, чтобы всё легло ровно
+        return max(0, raw)
     }
 
     func collectionView(_ collectionView: UICollectionView,
@@ -474,7 +484,6 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        // вертикальные промежутки по макету остаются 12
         return 12
     }
 
@@ -484,6 +493,7 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
         UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
     }
 }
+
 // MARK: - Internal Cells
 private final class EmojiCell: UICollectionViewCell {
     static let reuseId = "EmojiCell"
@@ -494,7 +504,6 @@ private final class EmojiCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        // серый бэкграунд появляется только при selected
         selectionBg.translatesAutoresizingMaskIntoConstraints = false
         selectionBg.backgroundColor = .clear
         selectionBg.layer.cornerRadius = 16
@@ -522,9 +531,7 @@ private final class EmojiCell: UICollectionViewCell {
 
     func configure(emoji: String, selected: Bool) {
         label.text = emoji
-        selectionBg.backgroundColor = selected
-            ? (UIColor.systemGray5) // светло-серая подложка
-            : .clear
+        selectionBg.backgroundColor = selected ? UIColor.systemGray5 : .clear
     }
 }
 
@@ -532,16 +539,15 @@ private final class ColorCell: UICollectionViewCell {
     static let reuseId = "ColorCell"
 
     private let swatch = UIView()
-    private let ringLayer = CAShapeLayer() // внешний полупрозрачный контур
+    private let ringLayer = CAShapeLayer()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        // сам квадрат цвета — без отступов, на всю ячейку
         swatch.translatesAutoresizingMaskIntoConstraints = false
         swatch.layer.cornerRadius = 8
         swatch.layer.cornerCurve = .continuous
-        swatch.layer.borderColor = UIColor.white.cgColor   // белая внутренняя рамка (появится при selected)
+        swatch.layer.borderColor = UIColor.white.cgColor
         swatch.layer.borderWidth = 0
 
         contentView.addSubview(swatch)
@@ -552,15 +558,13 @@ private final class ColorCell: UICollectionViewCell {
             swatch.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
 
-        // внешний «ринг» рисуем слоем, чтобы не трогать размер свотча
         ringLayer.fillColor = UIColor.clear.cgColor
-        ringLayer.lineWidth = 4           // по 2 pt наружу и внутрь контура
-        ringLayer.isHidden = true         // виден только при selected
+        ringLayer.lineWidth = 4
+        ringLayer.isHidden = true
         ringLayer.lineJoin = .round
         ringLayer.lineCap = .round
         contentView.layer.addSublayer(ringLayer)
 
-        // важно: ничего не клипуем, чтобы штрих мог выходить наружу
         contentView.layer.masksToBounds = false
         layer.masksToBounds = false
     }
@@ -569,9 +573,6 @@ private final class ColorCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-
-        // путь для внешнего контура: чуть больше свотча, чтобы штрих вышел наружу
-        // свотч = 8 corner → у ринга сделаем на 2pt больше
         let ringRect = contentView.bounds.insetBy(dx: -2, dy: -2)
         let ringCorner: CGFloat = 10
         ringLayer.frame = contentView.bounds
@@ -580,11 +581,7 @@ private final class ColorCell: UICollectionViewCell {
 
     func configure(color: UIColor, selected: Bool) {
         swatch.backgroundColor = color
-
-        // внутренняя белая рамка
         swatch.layer.borderWidth = selected ? 2 : 0
-
-        // внешний полупрозрачный ринг
         ringLayer.strokeColor = color.withAlphaComponent(0.30).cgColor
         ringLayer.isHidden = !selected
     }

@@ -1,3 +1,4 @@
+
 import CoreData
 
 protocol TrackerRecordStoring: AnyObject {
@@ -9,13 +10,17 @@ protocol TrackerRecordStoring: AnyObject {
     func hasRecord(for trackerID: UUID, on date: Date) throws -> Bool
 }
 
+enum TrackerRecordStoreError: Error {
+    case trackerNotFound(UUID)
+    case dayBoundsFailed(Date)
+}
+
 final class TrackerRecordStore: NSObject, TrackerRecordStoring {
     private let stack: CoreDataStack
     var onChange: (() -> Void)?
 
     private lazy var frc: NSFetchedResultsController<TrackerRecordCoreData> = {
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
-        // сортируем по дате для предсказуемости
         req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
         let frc = NSFetchedResultsController(
             fetchRequest: req,
@@ -41,18 +46,17 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
     func add(_ record: TrackerRecord) throws {
         let ctx = stack.viewContext
 
-        let rec = TrackerRecordCoreData(context: ctx)
-        rec.id   = UUID() // это id самой записи, не трекера
-        rec.date = Calendar.current.startOfDay(for: record.date)
-
-        // находим связанный TrackerCoreData по trackerId
+        // найдём связанный трекер
         let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
         req.predicate = NSPredicate(format: "id == %@", record.trackerId as CVarArg)
 
         guard let trackerObj = try ctx.fetch(req).first else {
-            // если трекер не найден, это логическая ошибка – решай, как обрабатывать
-            return
+            throw TrackerRecordStoreError.trackerNotFound(record.trackerId)
         }
+
+        let rec = TrackerRecordCoreData(context: ctx)
+        rec.id = UUID() // id самой записи
+        rec.date = Calendar.current.startOfDay(for: record.date)
         rec.tracker = trackerObj
 
         try ctx.save()
@@ -60,14 +64,16 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
 
     func remove(for trackerID: UUID, on date: Date) throws {
         let ctx = stack.viewContext
-        let start = Calendar.current.startOfDay(for: date)
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        guard let (start, end) = dayBounds(for: date) else {
+            throw TrackerRecordStoreError.dayBoundsFailed(date)
+        }
 
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
         req.predicate = NSPredicate(
             format: "tracker.id == %@ AND date >= %@ AND date < %@",
             trackerID as CVarArg, start as CVarArg, end as CVarArg
         )
+
         if let rec = try ctx.fetch(req).first {
             ctx.delete(rec)
             try ctx.save()
@@ -83,8 +89,9 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
 
     func hasRecord(for trackerID: UUID, on date: Date) throws -> Bool {
         let ctx = stack.viewContext
-        let start = Calendar.current.startOfDay(for: date)
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        guard let (start, end) = dayBounds(for: date) else {
+            throw TrackerRecordStoreError.dayBoundsFailed(date)
+        }
 
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
         req.resultType = .countResultType
@@ -92,7 +99,17 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
             format: "tracker.id == %@ AND date >= %@ AND date < %@",
             trackerID as CVarArg, start as CVarArg, end as CVarArg
         )
-        return (try ctx.count(for: req)) > 0
+        return try ctx.count(for: req) > 0
+    }
+}
+
+private extension TrackerRecordStore {
+    /// Начало и конец суток для `date` с учётом календаря/часового пояса.
+    func dayBounds(for date: Date) -> (Date, Date)? {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return nil }
+        return (start, end)
     }
 }
 
