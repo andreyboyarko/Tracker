@@ -3,31 +3,28 @@
 import UIKit
 
 final class DatePickerViewController: UIViewController {
-
-    // входные/выходные параметры
     var initialDate: Date = Date()
     var onPick: ((Date) -> Void)?
+
+    // авто-закрытие по тапу на дате
+    var autoDismissOnPick: Bool = true
 
     private let picker = UIDatePicker()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         view.backgroundColor = .systemBackground
-        view.isUserInteractionEnabled = true
 
-        // Календарь в виде инлайн-таблицы
         picker.preferredDatePickerStyle = .inline
         picker.datePickerMode = .date
         picker.locale = Locale(identifier: "ru_RU")
         picker.calendar = Calendar(identifier: .gregorian)
         picker.timeZone = .current
+//        picker.maximumDate = Date()
+        picker.maximumDate = nil
         picker.date = initialDate
-
-        // реагируем на тыки по дням
         picker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
 
-        // Лейаут
         picker.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(picker)
         NSLayoutConstraint.activate([
@@ -47,11 +44,15 @@ final class DatePickerViewController: UIViewController {
     }
 
     @objc private func dateChanged(_ sender: UIDatePicker) {
-        // сразу прокидываем выбранную дату наружу
         onPick?(sender.date)
+        if autoDismissOnPick {
+            dismiss(animated: true)
+        }
     }
 
     @objc private func doneTapped() {
+        // на всякий — перед закрытием тоже прокинем текущую дату
+        onPick?(picker.date)
         dismiss(animated: true)
     }
 }

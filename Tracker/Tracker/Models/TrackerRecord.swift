@@ -2,8 +2,13 @@
 
 import Foundation
 
-struct TrackerRecord {
-    let id: UUID
+struct TrackerRecord: Hashable {
+    let trackerId: UUID
     let date: Date
-}
 
+    init(trackerId: UUID, date: Date) {
+        self.trackerId = trackerId
+        // нормализуем к началу суток
+        self.date = Calendar.current.startOfDay(for: date)
+    }
+}
