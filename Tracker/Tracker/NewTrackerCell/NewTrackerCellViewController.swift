@@ -50,6 +50,17 @@ final class NewTrackerCellViewController: UIViewController {
     // MARK: - UI: таблица «Категория/Расписание»
     private let buttonsTableView = UITableView(frame: .zero, style: .plain)
     private let buttonTitles = ["Категория", "Расписание"]
+    private var trackerCategory: TrackerCategory?
+    @objc private func pushCategory() {
+        let vc = CategoryViewController()
+        vc.modalPresentationStyle = .pageSheet
+        vc.onCategorySelected = { [weak self] title in
+            guard let self else { return }
+            self.trackerCategory = TrackerCategory(title: title, trackers: [])
+            self.buttonsTableView.reloadRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+        }
+        present(UINavigationController(rootViewController: vc), animated: true)
+    }
 
     // MARK: - UI: Emoji / Color
     private let emojiTitleLabel: UILabel = {
@@ -338,11 +349,13 @@ final class NewTrackerCellViewController: UIViewController {
     @objc private func cancelTapped() { dismiss(animated: true) }
 
     @objc private func saveTapped() {
+        // 1) Валидации
         if trackerWeekdays.isEmpty && showSchedule {
             showAlertError(message: "Нужно выбрать хотя бы один день недели")
             return
         }
-        guard let title = titleTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+        guard let title = titleTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
             showAlertError(message: "Заполните название")
             return
         }
@@ -354,7 +367,12 @@ final class NewTrackerCellViewController: UIViewController {
             showAlertError(message: "Выберите цвет")
             return
         }
+        guard let categoryName = trackerCategory?.title else {
+            showAlertError(message: "Нужно выбрать категорию")
+            return
+        }
 
+        // 2) Сначала создаём ТРЕКЕР…
         let tracker = Tracker(
             id: UUID(),
             title: title,
@@ -362,10 +380,16 @@ final class NewTrackerCellViewController: UIViewController {
             emoji: pickedEmoji,
             weekdays: showSchedule ? trackerWeekdays : Array(WeekdaysEnum.allCases)
         )
-        let category = TrackerCategory(title: "Домашний уют", trackers: [tracker])
+
+        // 3) …затем одну ЕДИНСТВЕННУЮ категорию с именем, выбранным пользователем
+        let category = TrackerCategory(title: categoryName, trackers: [tracker])
+
+        // 4) Отдаём наружу и закрываем экран ровно один раз
         onTrackerAdded?(category)
         dismiss(animated: true)
     }
+    
+    
 
     private func showAlertError(message: String) {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
@@ -378,7 +402,10 @@ final class NewTrackerCellViewController: UIViewController {
         vc.modalPresentationStyle = .pageSheet
         vc.weekdays = trackerWeekdays
         vc.setWeekdays = { [weak self] weekdays in
-            self?.trackerWeekdays = weekdays
+            guard let self else { return }
+            self.trackerWeekdays = weekdays
+            // обновляем ровно строку "Расписание"
+            self.buttonsTableView.reloadRows(at: [IndexPath(row: 1, section: 0)], with: .automatic)
         }
         present(UINavigationController(rootViewController: vc), animated: true)
     }
@@ -389,7 +416,11 @@ extension NewTrackerCellViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { 75 }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if showSchedule && indexPath.row == 1 { pushSchedule() }
+        if indexPath.row == 0 {
+            pushCategory()
+        } else if showSchedule && indexPath.row == 1 {
+            pushSchedule()
+        }
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
@@ -397,13 +428,30 @@ extension NewTrackerCellViewController: UITableViewDelegate {
 extension NewTrackerCellViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { showSchedule ? buttonTitles.count : 1 }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(
             withIdentifier: NewTrackerCell.identifier,
             for: indexPath
-        ) as? NewTrackerCell else { return UITableViewCell() }
-
-        cell.setTitle(buttonTitles[showSchedule ? indexPath.row : 0])
+        ) as? NewTrackerCell else {
+            return UITableViewCell()
+        }
+        
+        let title = buttonTitles[showSchedule ? indexPath.row : 0]
+        cell.setTitle(title)
+        
+        if indexPath.row == 0 {
+            // Категория
+            cell.setSubtitle(trackerCategory?.title)
+        } else if showSchedule && indexPath.row == 1 {
+            // Расписание
+            var subtitle = trackerWeekdays.map(\.shortTitle).joined(separator: ", ")
+            if trackerWeekdays.count == 7 { subtitle = "Каждый день" }
+            cell.setSubtitle(subtitle)
+        } else {
+            cell.setSubtitle(nil)
+        }
+        
         return cell
     }
 }

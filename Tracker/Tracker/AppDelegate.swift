@@ -4,7 +4,7 @@ import UIKit
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
-
+    let storeContainer = StoreContainer()
     // Если DI/хранилища не нужны — ничего лишнего здесь не держим.
     // Если будешь прокидывать контейнер хранения — добавишь здесь поле.
 
