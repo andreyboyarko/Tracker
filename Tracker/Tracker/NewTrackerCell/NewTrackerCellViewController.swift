@@ -371,7 +371,7 @@ final class NewTrackerCellViewController: UIViewController {
             showAlertError(message: "Нужно выбрать категорию")
             return
         }
-
+        
         // 2) Сначала создаём ТРЕКЕР…
         let tracker = Tracker(
             id: UUID(),
@@ -436,22 +436,25 @@ extension NewTrackerCellViewController: UITableViewDataSource {
         ) as? NewTrackerCell else {
             return UITableViewCell()
         }
-        
+
         let title = buttonTitles[showSchedule ? indexPath.row : 0]
         cell.setTitle(title)
-        
+
         if indexPath.row == 0 {
             // Категория
             cell.setSubtitle(trackerCategory?.title)
         } else if showSchedule && indexPath.row == 1 {
             // Расписание
-            var subtitle = trackerWeekdays.map(\.shortTitle).joined(separator: ", ")
-            if trackerWeekdays.count == 7 { subtitle = "Каждый день" }
+            let subtitle: String? = {
+                if trackerWeekdays.isEmpty { return nil }
+                if trackerWeekdays.count == 7 { return "Каждый день" }
+                return trackerWeekdays.map { $0.shortTitle }.joined(separator: ", ")
+            }()
             cell.setSubtitle(subtitle)
         } else {
             cell.setSubtitle(nil)
         }
-        
+
         return cell
     }
 }

@@ -9,8 +9,12 @@ final class CategoryViewModel {
     var onDataFetched: (() -> Void)?
 
     init() {
-        let store = (UIApplication.shared.delegate as! AppDelegate).storeContainer.categoryStore
-        self.store = store
+        if
+          let app = UIApplication.shared.delegate as? AppDelegate {
+            self.store = app.storeContainer.categoryStore
+        } else {
+            fatalError("AppDelegate cast failed — нет доступа к storeContainer")
+        }
     }
     
     func loadCategories() {
