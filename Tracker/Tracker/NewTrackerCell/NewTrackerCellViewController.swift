@@ -185,7 +185,7 @@ final class NewTrackerCellViewController: UIViewController {
 
         buttonsTableView.translatesAutoresizingMaskIntoConstraints = false
         buttonsTableView.backgroundColor = .background
-        buttonsTableView.separatorStyle = .singleLine
+        buttonsTableView.separatorStyle = .none
         buttonsTableView.layer.cornerRadius = 16
         buttonsTableView.layer.masksToBounds = true
         buttonsTableView.isScrollEnabled = false
