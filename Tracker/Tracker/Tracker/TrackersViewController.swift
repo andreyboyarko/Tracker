@@ -347,24 +347,18 @@ extension TrackersViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: TrackerViewCell.identifier,
-            for: indexPath
-        ) as? TrackerViewCell else {
-            return UICollectionViewCell()
-        }
+        guard
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: TrackerViewCell.identifier,
+                for: indexPath
+            ) as? TrackerViewCell
+        else { return UICollectionViewCell() }
 
         let tracker = filteredCategories[indexPath.section].trackers[indexPath.item]
-        
-        var isCompleted = false
-        var count = 0
-        do {
-            isCompleted = try recordStore.hasRecord(for: tracker.id, on: selectedDate)
-            count = try recordStore.count(for: tracker.id)
-        } catch {
-            isCompleted = false
-            count = 0
-        }
+
+        // получаешь состояние/кол-во как у тебя принято
+        let isCompleted = (try? recordStore.hasRecord(for: tracker.id, on: selectedDate)) ?? false
+        let count = (try? recordStore.count(for: tracker.id)) ?? 0
 
         cell.configure(with: tracker, isCompleted: isCompleted, count: count)
         return cell

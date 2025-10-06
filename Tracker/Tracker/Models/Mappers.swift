@@ -1,12 +1,11 @@
-
-
-// Mappers.swift
 import UIKit
 
 extension TrackerCoreData {
     func toDomain() -> Tracker {
-        let color = UIColor(hex6: colorHex ?? "#999999") ?? .black
-        let days  = Array(WeekdayMask.toSet(UInt16(scheduleMask)))
+        let hex = colorHex ?? "34C759FF" // зелёный дефолт, если пусто
+        let color = UIColor(hexAny: hex) ?? .systemGreen
+
+        let days = Array(WeekdayMask.toSet(UInt16(scheduleMask)))
         return Tracker(
             id: id ?? UUID(),
             title: name ?? "",
@@ -28,7 +27,7 @@ extension TrackerCategoryCoreData {
 
 extension TrackerRecordCoreData {
     func toDomain() -> TrackerRecord {
-        TrackerRecord(trackerId: tracker?.id ?? UUID(),
+        TrackerRecord(trackerId: tracker?.id ?? UUID(), // ← тоже id
                       date: date ?? Date())
     }
 }

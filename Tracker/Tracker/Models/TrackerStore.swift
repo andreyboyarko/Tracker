@@ -47,15 +47,15 @@ final class TrackerStore: NSObject, TrackerStoring {
     func create(_ tracker: Tracker, categoryTitle: String) throws {
         let ctx = stack.viewContext
         let obj = TrackerCoreData(context: ctx)
-        obj.id = tracker.id
-        obj.name = tracker.title
+        obj.id = tracker.id                 // ← id
+        obj.name = tracker.title            // ← name
         obj.emoji = tracker.emoji
-        obj.colorHex = tracker.color.hex6
+        obj.colorHex = tracker.color.hexRGBA
         obj.scheduleMask = Int16(WeekdayMask.make(from: Set(tracker.weekdays)))
         obj.category = try categoryStore.ensureCategory(title: categoryTitle, in: ctx)
         try ctx.save()
     }
-
+    
     func delete(id: UUID) throws {
         let ctx = stack.viewContext
         let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
@@ -69,20 +69,20 @@ final class TrackerStore: NSObject, TrackerStoring {
     func update(_ tracker: Tracker, categoryTitle: String) throws {
         let ctx = stack.viewContext
         let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg)
+        req.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg) // ← id
         guard let obj = try ctx.fetch(req).first else { return }
-        obj.name = tracker.title
+        obj.name = tracker.title            // ← name
         obj.emoji = tracker.emoji
-        obj.colorHex = tracker.color.hex6
+        obj.colorHex = tracker.color.hexRGBA
         obj.scheduleMask = Int16(WeekdayMask.make(from: Set(tracker.weekdays)))
         obj.category = try categoryStore.ensureCategory(title: categoryTitle, in: ctx)
         try ctx.save()
     }
-
+    
     func tracker(by id: UUID) throws -> Tracker? {
         let ctx = stack.viewContext
         let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
-        req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        req.predicate = NSPredicate(format: "id == %@", id as CVarArg) // ← id
         return try ctx.fetch(req).first.map { $0.toDomain() }
     }
 
