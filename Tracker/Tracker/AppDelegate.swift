@@ -1,4 +1,5 @@
 import UIKit
+import AppMetricaCore
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -11,6 +12,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
+        // MARK: - Инициализация AppMetrica SDK
+        let configuration = AppMetricaConfiguration(apiKey: "YOUR_API_KEY_HERE")
+        AppMetrica.activate(with: configuration!)
+
         // Точка для ранней конфигурации (например, UIAppearance, логирование, аналитика)
         return true
     }
