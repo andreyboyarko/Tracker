@@ -1,9 +1,8 @@
-
-
 import UIKit
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
+    // MARK: - Контейнер хранилищ
     let storeContainer = StoreContainer()
     // Если DI/хранилища не нужны — ничего лишнего здесь не держим.
     // Если будешь прокидывать контейнер хранения — добавишь здесь поле.
