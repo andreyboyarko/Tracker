@@ -5,13 +5,14 @@ xcassets:
     - templateName: swift5
       params:
         enumName: Asset
-      output: Generated/SwiftGen+Assets.swift
+      output: Tracker/Generated/SwiftGen+Assets.swift
 
 strings:
   inputs:
-    - Tracker/Lokaliade/ru.lproj/Localizable.strings
+    - Tracker/en.lproj
+    - Tracker/ru.lproj
   outputs:
     - templateName: structured-swift5
       params:
         enumName: L10n
-      output: Generated/SwiftGen+Strings.swift
+      output: Tracker/Generated/SwiftGen+Strings.swift
