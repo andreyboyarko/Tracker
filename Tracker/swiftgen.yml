@@ -1,6 +1,6 @@
 xcassets:
   inputs:
-    - Tracker/Assets.xcassets
+    - Assets.xcassets
   outputs:
     - templateName: swift5
       params:
@@ -9,7 +9,7 @@ xcassets:
 
 strings:
   inputs:
-    - Tracker/Lokaliade/ru.lproj/Localizable.strings   
+    - Lokaliade   # берём всю папку; SwiftGen сам найдёт ru/en через фильтр по Localizable
   outputs:
     - templateName: structured-swift5
       params:

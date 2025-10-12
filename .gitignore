@@ -28,3 +28,9 @@ fastlane/test_output
 # Misc
 .DS_Store
 *.orig
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.DS_Store
