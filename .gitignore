@@ -28,3 +28,5 @@ fastlane/test_output
 # Misc
 .DS_Store
 *.orig
+xcuserdata/
+*.xcuserstate
