@@ -34,3 +34,7 @@ xcuserdata/
 # Xcode user files
 *.xcuserstate
 xcuserdata/
+
+# Ignore Xcode user state files
+*.xcuserstate
+xcuserdata/
