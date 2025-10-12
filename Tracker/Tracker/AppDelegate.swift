@@ -13,7 +13,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
         // MARK: - Инициализация AppMetrica SDK
-        let configuration = AppMetricaConfiguration(apiKey: "YOUR_API_KEY_HERE")
+        let configuration = AppMetricaConfiguration(apiKey: "916ebf43-8fc8-4bee-afde-a6bbda67159e")
         AppMetrica.activate(with: configuration!)
 
         // Точка для ранней конфигурации (например, UIAppearance, логирование, аналитика)

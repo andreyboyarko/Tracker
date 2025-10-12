@@ -63,11 +63,6 @@
 			path = TrackerTests;
 			sourceTree = "<group>";
 		};
-		FC7A57DA2E61BD1200815114 /* TrackerUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = TrackerUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,7 +102,6 @@
 			children = (
 				FC7A57B92E61BD1100815114 /* Tracker */,
 				FC7A57D02E61BD1200815114 /* TrackerTests */,
-				FC7A57DA2E61BD1200815114 /* TrackerUITests */,
 				FC7A57B82E61BD1100815114 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -179,9 +173,6 @@
 			dependencies = (
 				FC7A57D92E61BD1200815114 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				FC7A57DA2E61BD1200815114 /* TrackerUITests */,
-			);
 			name = TrackerUITests;
 			productName = TrackerUITests;
 			productReference = FC7A57D72E61BD1200815114 /* TrackerUITests.xctest */;
@@ -216,6 +207,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = FC7A57AE2E61BD1100815114;
 			minimizedProjectReferenceProxies = 1;
