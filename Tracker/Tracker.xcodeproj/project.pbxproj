@@ -44,7 +44,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Tracker/Analytics/Untitled.swift,
 			);
 			target = FC7A57B62E61BD1100815114 /* Tracker */;
 		};

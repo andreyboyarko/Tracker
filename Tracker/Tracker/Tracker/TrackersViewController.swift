@@ -18,6 +18,19 @@ final class TrackersViewController: UIViewController {
     private var dateContainer: UIView?
     private var currentDate = Date()
     
+    
+    private let analytics: AnalyticsServiceProtocol
+    
+    // MARK: - Filter
+    private enum FilterType {
+        case all
+        case today
+        case completed
+        case notCompleted
+    }
+
+    private var currentFilter: FilterType = .all
+    
     // MARK: - UI
     private let searchBar = UISearchBar()
     private lazy var collectionView: UICollectionView = {
@@ -67,13 +80,32 @@ final class TrackersViewController: UIViewController {
         }
     }
     
+    private let filtersButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(L10n.filters, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = .ybBlue
+        button.layer.cornerRadius = 16
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+      }()
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let h = filtersButton.bounds.height
+        collectionView.contentInset.bottom = h + 16
+        collectionView.verticalScrollIndicatorInsets.bottom = h + 16
+    }
+    
     // MARK: - Init
     init(categoryStore: TrackerCategoryStore,
          trackerStore: TrackerStore,
-         recordStore: TrackerRecordStore) {
+         recordStore: TrackerRecordStore,
+         analytics: AnalyticsServiceProtocol = AppMetricaService.shared){
         self.categoryStore = categoryStore
         self.trackerStore = trackerStore
         self.recordStore = recordStore
+        self.analytics = analytics
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -97,12 +129,11 @@ final class TrackersViewController: UIViewController {
         
         // UI
         setupSearchBar()        // важно: чип даты берет цвет фона из searchBar
+        setupFiltersButton()
         setupCollection()
         setupEmptyState()
         setupRightDateChip()    // появляется прямоугольник с датой
-        
-        // Подписки на обновления стора (NSFetchedResultsController дергает onChange)
-        //        categoryStore.onChange = { [weak self] in self?.reloadFromStores() }
+
         trackerStore.onChange  = { [weak self] in self?.reloadFromStores() }
         recordStore.onChange   = { [weak self] in self?.reloadFromStores() }
         
@@ -122,6 +153,19 @@ final class TrackersViewController: UIViewController {
             searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             searchBar.heightAnchor.constraint(equalToConstant: 36)
+        ])
+    }
+    
+    // MARK: - Filter
+    private func setupFiltersButton() {
+        view.addSubview(filtersButton)
+        filtersButton.addTarget(self, action: #selector(filtersButtonTapped), for: .touchUpInside)
+
+        NSLayoutConstraint.activate([
+            filtersButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            filtersButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            filtersButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
     
@@ -203,7 +247,8 @@ final class TrackersViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: cellParams.leftInset),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -cellParams.rightInset),
-            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+//            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: filtersButton.topAnchor, constant: -12)
         ])
     }
     
@@ -270,6 +315,16 @@ final class TrackersViewController: UIViewController {
         nav.modalPresentationStyle = .pageSheet
         present(nav, animated: true)
     }
+    
+    // MARK: - Actions
+    @objc private func filtersButtonTapped() {
+        // откроем экран фильтров (если он есть в проекте)
+        let vc = FiltersViewController()
+        // vc.delegate = self // если используешь делегат
+        vc.modalPresentationStyle = .pageSheet
+        present(UINavigationController(rootViewController: vc), animated: true)
+    }
+    
     // MARK: - Filtering
     private func applyFilterForSelectedDate() {
         let weekdayIndex = Calendar.current.component(.weekday, from: selectedDate)
