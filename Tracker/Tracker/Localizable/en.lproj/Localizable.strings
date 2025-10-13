@@ -53,3 +53,7 @@
 "totalCompleted" = "Trackers Completed";
 "bestDay" = "Best Day";
 "average" = "Average Trackers per Day";
+"filterAll" = "All trackers";
+"filterForToday" = "For today";
+"filterCompleted" = "Completed";
+"filterUncompleted" = "Uncompleted";

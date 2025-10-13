@@ -68,14 +68,14 @@ internal enum L10n {
   internal static let everyday = L10n.tr("Localizable", "everyday", fallback: "Каждый день")
   /// Все трекеры
   internal static let filterAll = L10n.tr("Localizable", "filterAll", fallback: "Все трекеры")
-  /// Завершенные
-  internal static let filterCompleted = L10n.tr("Localizable", "filterCompleted", fallback: "Завершенные")
-  /// Трекеры на сегодня
-  internal static let filterForToday = L10n.tr("Localizable", "filterForToday", fallback: "Трекеры на сегодня")
+  /// Завершённые
+  internal static let filterCompleted = L10n.tr("Localizable", "filterCompleted", fallback: "Завершённые")
+  /// На сегодня
+  internal static let filterForToday = L10n.tr("Localizable", "filterForToday", fallback: "На сегодня")
   /// Фильтры
   internal static let filters = L10n.tr("Localizable", "filters", fallback: "Фильтры")
-  /// Не завершенные
-  internal static let filterUncompleted = L10n.tr("Localizable", "filterUncompleted", fallback: "Не завершенные")
+  /// Незавершённые
+  internal static let filterUncompleted = L10n.tr("Localizable", "filterUncompleted", fallback: "Незавершённые")
   /// Привычка
   internal static let habit = L10n.tr("Localizable", "habit", fallback: "Привычка")
   /// Нерегулярное событие

@@ -45,11 +45,11 @@
 "deleteActionSheetMessage" = "Уверены что хотите удалить трекер?";
 "filters" = "Фильтры";
 "filterAll" = "Все трекеры";
-"filterForToday" = "Трекеры на сегодня";
-"filterCompleted" = "Завершенные";
-"filterUncompleted" = "Не завершенные";
 "emptyStatistics" = "Анализировать пока нечего";
 "totalActiveDays" = "Общее количество дней активности";
 "totalCompleted" = "Трекеров завершено";
 "bestDay" = "Лучший день";
 "average" = "Среднее количество трекеров в день";
+"filterForToday" = "На сегодня";
+"filterCompleted" = "Завершённые";
+"filterUncompleted" = "Незавершённые";

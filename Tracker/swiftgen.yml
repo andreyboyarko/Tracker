@@ -1,3 +1,16 @@
+# Tracker/swiftgen.yml
+input_dir: .
+output_dir: Generated
+
+strings:
+  inputs:
+    - Tracker/Localizable/ru.lproj/Localizable.strings   # один dev-язык (ru)
+  outputs:
+    - templateName: structured-swift5
+      params:
+        enumName: L10n
+      output: SwiftGen+Strings.swift
+
 xcassets:
   inputs:
     - Tracker/Assets.xcassets
@@ -5,14 +18,4 @@ xcassets:
     - templateName: swift5
       params:
         enumName: Asset
-      output: Tracker/Generated/SwiftGen+Assets.swift
-
-strings:
-  inputs:
-    - Tracker/en.lproj
-    - Tracker/ru.lproj
-  outputs:
-    - templateName: structured-swift5
-      params:
-        enumName: L10n
-      output: Tracker/Generated/SwiftGen+Strings.swift
+      output: SwiftGen+Assets.swift
