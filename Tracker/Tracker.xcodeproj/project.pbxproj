@@ -14,6 +14,8 @@
 		FC607F9F2E97220E00F57035 /* AppMetricaCrashes in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F9E2E97220E00F57035 /* AppMetricaCrashes */; };
 		FC607FA12E97220E00F57035 /* AppMetricaLibraryAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = FC607FA02E97220E00F57035 /* AppMetricaLibraryAdapter */; };
 		FC607FA32E97220E00F57035 /* AppMetricaScreenshot in Frameworks */ = {isa = PBXBuildFile; productRef = FC607FA22E97220E00F57035 /* AppMetricaScreenshot */; };
+		FC9C9CCB2E9D21AF00C4E25F /* SwiftGen+Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C9CC82E9D21AF00C4E25F /* SwiftGen+Assets.swift */; };
+		FC9C9CCC2E9D21AF00C4E25F /* SwiftGen+Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C9CC92E9D21AF00C4E25F /* SwiftGen+Strings.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +39,8 @@
 		FC7A57B72E61BD1100815114 /* Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC7A57CD2E61BD1200815114 /* TrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC7A57D72E61BD1200815114 /* TrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC9C9CC82E9D21AF00C4E25F /* SwiftGen+Assets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftGen+Assets.swift"; sourceTree = "<group>"; };
+		FC9C9CC92E9D21AF00C4E25F /* SwiftGen+Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftGen+Strings.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -100,6 +104,7 @@
 		FC7A57AE2E61BD1100815114 = {
 			isa = PBXGroup;
 			children = (
+				FC9C9CCA2E9D21AF00C4E25F /* Generated */,
 				FC7A57B92E61BD1100815114 /* Tracker */,
 				FC7A57D02E61BD1200815114 /* TrackerTests */,
 				FC7A57B82E61BD1100815114 /* Products */,
@@ -114,6 +119,15 @@
 				FC7A57D72E61BD1200815114 /* TrackerUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FC9C9CCA2E9D21AF00C4E25F /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				FC9C9CC82E9D21AF00C4E25F /* SwiftGen+Assets.swift */,
+				FC9C9CC92E9D21AF00C4E25F /* SwiftGen+Strings.swift */,
+			);
+			path = Generated;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -256,6 +270,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC9C9CCB2E9D21AF00C4E25F /* SwiftGen+Assets.swift in Sources */,
+				FC9C9CCC2E9D21AF00C4E25F /* SwiftGen+Strings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
