@@ -1,52 +1,52 @@
-
-
 import UIKit
 
 final class OnboardingPageController: UIViewController {
-    private var pageViewController: UIPageViewController!
+    // MARK: - UI
+    private var pageVC: UIPageViewController!
     private var pages: [UIViewController] = []
     private let pageControl = UIPageControl()
 
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setupPages()
-        setupPageViewController()
+        setupPageVC()
         setupPageControl()
     }
 
+    // MARK: - Setup
     private func setupPages() {
-        let first  = OnboardingViewController(
-            title: "Отслеживайте только то, что хотите",
-            image: .onboarding1
+        let first = OnboardingViewController(
+            title: L10n.onboardingTitle1,
+            image: Asset.onboarding1.image
         )
         let second = OnboardingViewController(
-            title: "Даже если это не литры воды и йога",
-            image: .onboarding2
+            title: L10n.onboardingTitle2,
+            image: Asset.onboarding2.image
         )
         pages = [first, second]
     }
+    
+    private func setupPageVC() {
+        let vc = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .horizontal)
+        vc.dataSource = self
+        vc.delegate   = self
+        vc.setViewControllers([pages[0]], direction: .forward, animated: false)
 
-    private func setupPageViewController() {
-        pageViewController = UIPageViewController(
-            transitionStyle: .scroll,
-            navigationOrientation: .horizontal
-        )
-        pageViewController.dataSource = self
-        pageViewController.delegate   = self
-        pageViewController.setViewControllers([pages[0]], direction: .forward, animated: false)
+        addChild(vc)
+        view.addSubview(vc.view)
+        vc.didMove(toParent: self)
 
-        addChild(pageViewController)
-        view.addSubview(pageViewController.view)
-        pageViewController.didMove(toParent: self)
-
-        pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        vc.view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            pageViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            pageViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            pageViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            pageViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            vc.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            vc.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            vc.view.topAnchor.constraint(equalTo: view.topAnchor),
+            vc.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+
+        pageVC = vc
     }
 
     private func setupPageControl() {
@@ -59,38 +59,35 @@ final class OnboardingPageController: UIViewController {
         pageControl.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            // отступ как в макете (можешь подправить при необходимости)
             pageControl.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -134)
         ])
     }
 }
 
+// MARK: - UIPageViewControllerDataSource
 extension OnboardingPageController: UIPageViewControllerDataSource {
-    func pageViewController(
-        _ pageViewController: UIPageViewController,
-        viewControllerBefore viewController: UIViewController
-    ) -> UIViewController? {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            viewControllerBefore viewController: UIViewController) -> UIViewController? {
         guard let idx = pages.firstIndex(of: viewController) else { return nil }
         let prev = idx - 1
         return prev >= 0 ? pages[prev] : nil
     }
 
-    func pageViewController(
-        _ pageViewController: UIPageViewController,
-        viewControllerAfter viewController: UIViewController
-    ) -> UIViewController? {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            viewControllerAfter viewController: UIViewController) -> UIViewController? {
         guard let idx = pages.firstIndex(of: viewController) else { return nil }
         let next = idx + 1
         return next < pages.count ? pages[next] : nil
     }
 }
 
+// MARK: - UIPageViewControllerDelegate
 extension OnboardingPageController: UIPageViewControllerDelegate {
-    func pageViewController(
-        _ pageViewController: UIPageViewController,
-        didFinishAnimating finished: Bool,
-        previousViewControllers: [UIViewController],
-        transitionCompleted completed: Bool
-    ) {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            didFinishAnimating finished: Bool,
+                            previousViewControllers: [UIViewController],
+                            transitionCompleted completed: Bool) {
         guard completed,
               let current = pageViewController.viewControllers?.first,
               let idx = pages.firstIndex(of: current) else { return }

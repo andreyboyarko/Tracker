@@ -5,6 +5,7 @@ protocol StatisticsViewDelegate: AnyObject {
 }
 
 final class StatisticsViewModel {
+    // Публичное read-only состояние для VC
     private(set) var statistics: [StatisticsEnum: String] = [:]
 
     private let recordStore: TrackerRecordStore
@@ -15,14 +16,29 @@ final class StatisticsViewModel {
     init(recordStore: TrackerRecordStore) {
         self.recordStore = recordStore
 
-        // у стора — замыкание onChange, а не delegate
+        // 1) слушаем изменения стора
         self.recordStore.onChange = { [weak self] in
-            self?.loadStatistics()
+            self?.recalculate()                // всегда на main внутри recalculate()
         }
+        self.recordStore.delegate = self
+
+        // 2) сразу посчитать текущие значения
+        recalculate()
     }
 
+    /// Явный вызов из VC (если хочется)
     func loadStatistics() {
-        // records() — предположительно throws -> [TrackerRecord]
+        recalculate()
+    }
+
+    // MARK: - Calc
+    private func recalculate() {
+        // гарантируем main для дальнейшего обновления UI
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in self?.recalculate() }
+            return
+        }
+
         let records = (try? recordStore.records()) ?? []
 
         guard !records.isEmpty else {
@@ -31,38 +47,40 @@ final class StatisticsViewModel {
             return
         }
 
-        // активные дни
+        // уникальные календарные дни активности
         let uniqueDays = Set(records.map { calendar.startOfDay(for: $0.date) })
         let totalActiveDays = uniqueDays.count
 
-        // лучший день
+        // группируем по дню, ищем лучший день
         let groupedByDay = Dictionary(grouping: records, by: { calendar.startOfDay(for: $0.date) })
-        let best = groupedByDay.max(by: { $0.value.count < $1.value.count })
+        // если несколько лучших — выберем самый поздний
+        let best = groupedByDay.max {
+            if $0.value.count == $1.value.count { return $0.key < $1.key }
+            return $0.value.count < $1.value.count
+        }
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale.current
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .none
-        let bestDayFormatted = best.map { dateFormatter.string(from: $0.key) } ?? "–"
+        let df = DateFormatter()
+        df.locale = .current
+        df.setLocalizedDateFormatFromTemplate("d MMM yyyy")
+        let bestDayFormatted = best.map { df.string(from: $0.key) } ?? "–"
 
-        // среднее
+        // среднее завершений в день, без дробей (как в макете)
         let avg = Double(records.count) / Double(max(totalActiveDays, 1))
-        let nf = NumberFormatter()
-        nf.locale = Locale.current
-        nf.maximumFractionDigits = 1
-        nf.minimumFractionDigits = 0
-        let averageFormatted = nf.string(from: NSNumber(value: avg)) ?? "0"
-
-        // всего завершено
-        let totalCompleted = records.count
+        let averageFormatted = String(Int(round(avg)))
 
         statistics = [
-            .totalCompleted: "\(totalCompleted)",
+            .totalCompleted: "\(records.count)",
             .totalActiveDays: "\(totalActiveDays)",
             .bestDay: bestDayFormatted,
             .average: averageFormatted
         ]
 
         delegate?.didUpdateData()
+    }
+}
+
+extension StatisticsViewModel: TrackerRecordStoreDelegate {
+    func didUpdateRecords() {
+        recalculate()
     }
 }

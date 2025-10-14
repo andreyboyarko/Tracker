@@ -1,11 +1,13 @@
 
+
+import Foundation
+
 enum Analytics {
-    enum Event: String {
-        case open, close, click
-    }
+    enum Event: String { case open, close, click }
 
     enum Screen: String {
         case main = "Main"
+        case statistics = "Statistics"
     }
 
     enum Item: String {

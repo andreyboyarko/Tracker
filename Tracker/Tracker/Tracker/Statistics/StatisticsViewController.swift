@@ -4,12 +4,12 @@ final class StatisticsViewController: UIViewController {
     // UI
     private let emptyLabel = UILabel()
     private let emptyImage = UIImageView()
-    private let tableView = UITableView(frame: .zero, style: .plain)
+    private let tableView  = UITableView(frame: .zero, style: .plain)
 
     // VM
     private let viewModel: StatisticsViewModel
 
-    // Порядок секций фиксируем через allCases
+    // Стабильный порядок отображения секций
     private var displayedKeys: [StatisticsEnum] = []
 
     // MARK: - Init
@@ -17,17 +17,25 @@ final class StatisticsViewController: UIViewController {
         self.viewModel = StatisticsViewModel(recordStore: recordStore)
         super.init(nibName: nil, bundle: nil)
     }
-    @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
 
         view.backgroundColor = .systemBackground
-
         navigationItem.title = L10n.statistics
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
+
+        // Empty state
+        emptyImage.image = UIImage(named: "emptyStatistics") ?? UIImage(named: "error")
+        emptyImage.contentMode = .scaleAspectFit
+        emptyImage.contentMode = .scaleAspectFit
+        emptyLabel.text = L10n.emptyStatistics
+        emptyLabel.textColor = .color
+        emptyLabel.font = .systemFont(ofSize: 12, weight: .medium)
 
         // Table
         tableView.dataSource = self
@@ -36,14 +44,6 @@ final class StatisticsViewController: UIViewController {
                            forCellReuseIdentifier: StatisticsTableViewCell.identifier)
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
-
-        // Empty state
-        // Если используешь SwiftGen для ассетов — раскомментируй:
-        // emptyImage.image = Asset.emptyStatistics.image
-        emptyImage.image = UIImage(named: "emptyStatistics")
-        emptyLabel.text = L10n.emptyStatistics
-        emptyLabel.textColor = .color
-        emptyLabel.font = .systemFont(ofSize: 12, weight: .medium)
 
         setupLayout()
 
@@ -64,12 +64,16 @@ final class StatisticsViewController: UIViewController {
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
+            // Пустое состояние
             emptyImage.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyImage.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            emptyImage.widthAnchor.constraint(equalToConstant: 80),
+            emptyImage.heightAnchor.constraint(equalToConstant: 80),
 
             emptyLabel.topAnchor.constraint(equalTo: emptyImage.bottomAnchor, constant: 8),
             emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
+            // Таблица
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
@@ -78,7 +82,7 @@ final class StatisticsViewController: UIViewController {
     }
 
     private func toggleTableViewVisibility() {
-        let hasData = viewModel.statistics.isEmpty == false
+        let hasData = !viewModel.statistics.isEmpty
         emptyImage.isHidden = hasData
         emptyLabel.isHidden = hasData
         tableView.isHidden  = !hasData
@@ -88,7 +92,7 @@ final class StatisticsViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension StatisticsViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
-        // Формируем стабильный порядок секций
+        // Стабильный порядок по allCases, показываем только то, что есть в словаре
         displayedKeys = StatisticsEnum.allCases.filter { viewModel.statistics[$0] != nil }
         return displayedKeys.count
     }
@@ -112,9 +116,7 @@ extension StatisticsViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension StatisticsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { 90 }
-
     func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat { 12 }
-
     func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
         let v = UIView()
         v.backgroundColor = .clear

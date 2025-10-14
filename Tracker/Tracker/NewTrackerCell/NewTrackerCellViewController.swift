@@ -12,16 +12,18 @@ final class NewTrackerCellViewController: UIViewController {
     private var selectedColor: UIColor?
 
     private let maxLength = 38
-    
+
     // MARK: - Edit mode
     private var isEditMode = false
     private var editInitialTracker: Tracker?
     private var editInitialCategoryTitle: String?
     private var editInitialCount: Int = 0
+
+    // лёгкие «префилды» для редактирования
     private var trackerId: UUID?
     private var categoryName: String?
     private var daysCount: Int?
-    
+
     private lazy var daysCountLabel: UILabel = {
         let l = UILabel()
         l.font = .systemFont(ofSize: 32, weight: .bold)
@@ -47,21 +49,24 @@ final class NewTrackerCellViewController: UIViewController {
     // MARK: - UI
     private let scrollView = UIScrollView()
     private let contentView = UIView()
+
     private let containerView = UIView()
     private let titleTextField = UITextField()
     private let clearButton = UIButton(type: .system)
     private let errorLabel = UILabel()
+
     private let buttonsTableView = UITableView(frame: .zero, style: .plain)
-    private let buttonTitles = ["Категория", "Расписание"]
+    private let buttonTitles: [String] = [L10n.category, L10n.schedule]
     private var trackerCategory: TrackerCategory?
-    
+
     private let emojiTitleLabel = UILabel()
     private lazy var emojiCollection = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
+
     private let colorTitleLabel = UILabel()
     private lazy var colorCollection = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
 
     private let cancelButton = UIButton(type: .system)
-    private let saveButton   = TrackerButton(title: "Сохранить")
+    private let saveButton   = TrackerButton(title: L10n.save)
     private let buttonStackView = UIStackView()
 
     private var showErrorLabel = false {
@@ -79,7 +84,7 @@ final class NewTrackerCellViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .ybBlack
-        navigationItem.title = "Новая привычка"
+        navigationItem.title = L10n.newTracker
 
         setupViews()
         setupLayout()
@@ -94,7 +99,8 @@ final class NewTrackerCellViewController: UIViewController {
         scrollView.contentInset.bottom = 24
         scrollView.scrollIndicatorInsets.bottom = 24
     }
-    
+
+    // MARK: - Keyboard
     @objc private func kbWillChange(_ n: Notification) {
         guard
             let u = n.userInfo,
@@ -118,7 +124,17 @@ final class NewTrackerCellViewController: UIViewController {
         )
     }
 
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(kbWillChange(_:)),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+    }
+
     // MARK: - Edit Setup
+    /// Вызывается из списка трекеров при долгом тапе → «Редактировать»
     func setToEdit(tracker: Tracker, of category: String, count: Int) {
         isEditMode = true
         editInitialTracker = tracker
@@ -135,12 +151,12 @@ final class NewTrackerCellViewController: UIViewController {
     }
 
     private func applyEditPrefillIfNeeded() {
-        guard isEditMode, let t = editInitialTracker else { return }
+        guard isEditMode, editInitialTracker != nil else { return }
 
-        navigationItem.title = "Редактирование привычки"
+        navigationItem.title = L10n.edit  // «Редактировать»
 
         if let cnt = editInitialCount as Int?, cnt > 0 {
-            daysCountLabel.text = "\(cnt) дней"
+            daysCountLabel.text = L10n.daysCount(cnt)
             daysCountLabel.isHidden = false
         }
 
@@ -151,6 +167,7 @@ final class NewTrackerCellViewController: UIViewController {
 
     // MARK: - Setup
     private func setupViews() {
+        // scroll
         scrollView.alwaysBounceVertical = true
         scrollView.keyboardDismissMode = .interactive
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -160,38 +177,43 @@ final class NewTrackerCellViewController: UIViewController {
         scrollView.addSubview(contentView)
         contentView.addSubview(daysCountLabel)
 
+        // input container
         containerView.backgroundColor = .background
         containerView.layer.cornerRadius = 16
+        containerView.layer.masksToBounds = true
         containerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(containerView)
 
-        titleTextField.placeholder = "Введите название трекера"
+        titleTextField.placeholder = L10n.enterTrackerName
         titleTextField.addTarget(self, action: #selector(limitLength), for: .editingChanged)
         titleTextField.textColor = .color
         titleTextField.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleTextField)
 
-        clearButton.setImage(UIImage(resource: .clear), for: .normal)
+        clearButton.setImage(Asset.clear.image, for: .normal)
         clearButton.addTarget(self, action: #selector(clearTextField), for: .touchUpInside)
         clearButton.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(clearButton)
 
-        errorLabel.text = "Ограничение 38 символов"
+        errorLabel.text = L10n.errorTrackerName
         errorLabel.textColor = .ybRed
         errorLabel.font = .ypRegular
         errorLabel.isHidden = true
         errorLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(errorLabel)
 
+        // table «Категория/Расписание»
         buttonsTableView.translatesAutoresizingMaskIntoConstraints = false
         buttonsTableView.backgroundColor = .background
         buttonsTableView.layer.cornerRadius = 16
+        buttonsTableView.layer.masksToBounds = true
         buttonsTableView.isScrollEnabled = false
         buttonsTableView.delegate = self
         buttonsTableView.dataSource = self
         buttonsTableView.register(NewTrackerCell.self, forCellReuseIdentifier: NewTrackerCell.identifier)
         contentView.addSubview(buttonsTableView)
 
+        // Emoji section
         emojiTitleLabel.text = "Emoji"
         emojiTitleLabel.font = .systemFont(ofSize: 19, weight: .bold)
         emojiTitleLabel.textColor = .color
@@ -209,7 +231,8 @@ final class NewTrackerCellViewController: UIViewController {
         emojiCollection.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.reuseId)
         contentView.addSubview(emojiCollection)
 
-        colorTitleLabel.text = "Цвет"
+        // Color section
+        colorTitleLabel.text = L10n.color
         colorTitleLabel.font = .systemFont(ofSize: 19, weight: .bold)
         colorTitleLabel.textColor = .color
         colorTitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -226,10 +249,15 @@ final class NewTrackerCellViewController: UIViewController {
         colorCollection.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.reuseId)
         contentView.addSubview(colorCollection)
 
+        // bottom buttons
         cancelButton.layer.cornerRadius = 16
+        colorCollection.clipsToBounds = false
+        colorCollection.layer.masksToBounds = false
+        cancelButton.layer.masksToBounds = true
         cancelButton.layer.borderColor = UIColor.ybRed.cgColor
         cancelButton.layer.borderWidth = 1
-        cancelButton.setTitle("Отменить", for: .normal)
+        cancelButton.setTitle(L10n.cancel, for: .normal)
+        cancelButton.titleLabel?.font = .ypRegular
         cancelButton.setTitleColor(.ybRed, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
 
@@ -246,10 +274,12 @@ final class NewTrackerCellViewController: UIViewController {
     }
 
     private func setupLayout() {
+        // фиксированные высоты секций (6×3 сетки)
         let emojiHeightC = emojiCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
-        let colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 40 * 3 + 12 * 2)
+        let colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
 
         NSLayoutConstraint.activate([
+            // scroll & content
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
@@ -261,6 +291,7 @@ final class NewTrackerCellViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
+            // top
             daysCountLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
             daysCountLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 
@@ -272,17 +303,20 @@ final class NewTrackerCellViewController: UIViewController {
             titleTextField.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
             titleTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             titleTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -41),
+
             clearButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             clearButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
 
             errorLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             errorLabel.topAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 8),
 
+            // table
             buttonsTableView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 24),
             buttonsTableView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             buttonsTableView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             buttonsTableView.heightAnchor.constraint(equalToConstant: showSchedule ? 150 : 75),
 
+            // Emoji
             emojiTitleLabel.topAnchor.constraint(equalTo: buttonsTableView.bottomAnchor, constant: 24),
             emojiTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
 
@@ -291,6 +325,7 @@ final class NewTrackerCellViewController: UIViewController {
             emojiCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             emojiHeightC,
 
+            // Color
             colorTitleLabel.topAnchor.constraint(equalTo: emojiCollection.bottomAnchor, constant: 24),
             colorTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
 
@@ -299,6 +334,7 @@ final class NewTrackerCellViewController: UIViewController {
             colorCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             colorHeightC,
 
+            // bottom buttons
             buttonStackView.topAnchor.constraint(greaterThanOrEqualTo: colorCollection.bottomAnchor, constant: 24),
             buttonStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             buttonStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
@@ -331,29 +367,31 @@ final class NewTrackerCellViewController: UIViewController {
 
     @objc private func saveTapped() {
         if trackerWeekdays.isEmpty && showSchedule {
-            showAlertError(message: "Нужно выбрать хотя бы один день недели")
+            showAlertError(message: L10n.alertChooseWeekday)
             return
         }
-        guard let title = titleTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
-            showAlertError(message: "Заполните название")
+        guard let title = titleTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            showAlertError(message: L10n.alertEnterTrackerName)
             return
         }
         guard let pickedEmoji = selectedEmoji else {
-            showAlertError(message: "Выберите эмодзи")
+            showAlertError(message: L10n.alertChooseEmoji)
             return
         }
         guard let pickedColor = selectedColor else {
-            showAlertError(message: "Выберите цвет")
+            showAlertError(message: L10n.alertChooseColor)
             return
         }
 
+        // Категория: сначала из выбора на экране, иначе — из предзаполнения при редактировании
         let resolvedCategoryTitle: String? = {
             if let title = trackerCategory?.title { return title }
             if let title = categoryName { return title }
             return nil
         }()
         guard let categoryName = resolvedCategoryTitle else {
-            showAlertError(message: "Нужно выбрать категорию")
+            showAlertError(message: L10n.alertChooseCategory)
             return
         }
 
@@ -374,7 +412,7 @@ final class NewTrackerCellViewController: UIViewController {
 
     private func showAlertError(message: String) {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Окей", style: .cancel))
+        alert.addAction(UIAlertAction(title: L10n.okay, style: .cancel))
         present(alert, animated: true)
     }
 }
@@ -389,44 +427,41 @@ extension NewTrackerCellViewController: UITableViewDelegate, UITableViewDataSour
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { showSchedule ? buttonTitles.count : 1 }
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        showSchedule ? buttonTitles.count : 1
+    }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: NewTrackerCell.identifier, for: indexPath) as? NewTrackerCell else { return UITableViewCell() }
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: NewTrackerCell.identifier,
+            for: indexPath
+        ) as? NewTrackerCell else {
+            return UITableViewCell()
+        }
+
         let title = buttonTitles[showSchedule ? indexPath.row : 0]
         cell.setTitle(title)
-        if indexPath.row == 0 {
-            let title = trackerCategory?.title ?? categoryName
-            cell.setSubtitle(title)
-        } else if showSchedule && indexPath.row == 1 {
-            let df = DateFormatter()
-            var subtitle: String?
 
-            if trackerWeekdays.isEmpty {
-                subtitle = nil
-            } else if trackerWeekdays.count == 7 {
-                subtitle = "Каждый день"
-            } else {
-                subtitle = trackerWeekdays
+        if indexPath.row == 0 {
+            // Категория
+            let t = trackerCategory?.title ?? categoryName
+            cell.setSubtitle(t)
+        } else if showSchedule && indexPath.row == 1 {
+            // Расписание
+            let df = DateFormatter()
+            let subtitle: String? = {
+                if trackerWeekdays.isEmpty { return nil }
+                if trackerWeekdays.count == 7 { return L10n.everyday }
+                return trackerWeekdays
                     .sorted { $0.rawValue < $1.rawValue }
                     .map { $0.shortName(formatter: df) }
                     .joined(separator: ", ")
-            }
+            }()
             cell.setSubtitle(subtitle)
         }
-        return cell
-    }
-}
 
-// MARK: - Keyboard
-private extension NewTrackerCellViewController {
-    func setupKeyboardHandling() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(kbWillChange(_:)),
-            name: UIResponder.keyboardWillChangeFrameNotification,
-            object: nil
-        )
+        return cell
     }
 }
 
@@ -437,7 +472,6 @@ private extension NewTrackerCellViewController {
         vc.modalPresentationStyle = .pageSheet
         vc.onCategorySelected = { [weak self] title in
             guard let self else { return }
-            // храним имя категории и подсветим его в таблице
             self.categoryName = title
             self.trackerCategory = TrackerCategory(title: title, trackers: [])
             self.buttonsTableView.reloadRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
@@ -470,8 +504,9 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: EmojiCell.reuseId,
                 for: indexPath
-            ) as? EmojiCell else { return UICollectionViewCell() }
-
+            ) as? EmojiCell else {
+                return UICollectionViewCell()
+            }
             let emoji = emojis[indexPath.item]
             cell.configure(emoji: emoji, selected: (emoji == selectedEmoji))
             return cell
@@ -479,8 +514,9 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: ColorCell.reuseId,
                 for: indexPath
-            ) as? ColorCell else { return UICollectionViewCell() }
-
+            ) as? ColorCell else {
+                return UICollectionViewCell()
+            }
             let color = colors[indexPath.item]
             cell.configure(color: color, selected: (selectedColor?.cgColor == color.cgColor))
             return cell
@@ -499,7 +535,7 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
         }
     }
 
-    // размеры как в макете
+    // фиксированные размеры
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -542,6 +578,7 @@ private final class EmojiCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+
         selectionBg.translatesAutoresizingMaskIntoConstraints = false
         selectionBg.backgroundColor = .clear
         selectionBg.layer.cornerRadius = 16
@@ -564,6 +601,7 @@ private final class EmojiCell: UICollectionViewCell {
             label.centerYAnchor.constraint(equalTo: selectionBg.centerYAnchor)
         ])
     }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(emoji: String, selected: Bool) {
@@ -580,6 +618,7 @@ private final class ColorCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+
         swatch.translatesAutoresizingMaskIntoConstraints = false
         swatch.layer.cornerRadius = 8
         swatch.layer.cornerCurve = .continuous
@@ -597,10 +636,14 @@ private final class ColorCell: UICollectionViewCell {
         ringLayer.fillColor = UIColor.clear.cgColor
         ringLayer.lineWidth = 4
         ringLayer.isHidden = true
+        ringLayer.lineJoin = .round
+        ringLayer.lineCap = .round
         contentView.layer.addSublayer(ringLayer)
+
         contentView.layer.masksToBounds = false
         layer.masksToBounds = false
     }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func layoutSubviews() {
