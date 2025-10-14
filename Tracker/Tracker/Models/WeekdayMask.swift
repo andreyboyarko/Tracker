@@ -2,7 +2,7 @@ import Foundation
 
 enum WeekdayMask {
     /// Пн=бит0 … Вс=бит6
-    static func make(from set: Set<WeekdaysEnum>) -> UInt16 {
+    static func make(from set: Set<Weekday>) -> UInt16 {
         set.reduce(0) { acc, d in
             let bit: Int
             switch d {
@@ -18,8 +18,8 @@ enum WeekdayMask {
         }
     }
 
-    static func toSet(_ mask: UInt16) -> Set<WeekdaysEnum> {
-        var s = Set<WeekdaysEnum>()
+    static func toSet(_ mask: UInt16) -> Set<Weekday> {
+        var s = Set<Weekday>()
         if (mask & (1<<0)) != 0 { s.insert(.monday) }
         if (mask & (1<<1)) != 0 { s.insert(.tuesday) }
         if (mask & (1<<2)) != 0 { s.insert(.wednesday) }

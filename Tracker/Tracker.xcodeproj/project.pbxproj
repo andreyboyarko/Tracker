@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FC607F0A2E971EE000F57035 /* YandexMobileMetrica in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F092E971EE000F57035 /* YandexMobileMetrica */; };
-		FC607F0C2E971EE000F57035 /* YandexMobileMetricaCrashes in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F0B2E971EE000F57035 /* YandexMobileMetricaCrashes */; };
 		FC607F9B2E97220E00F57035 /* AppMetricaAdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F9A2E97220E00F57035 /* AppMetricaAdSupport */; };
 		FC607F9D2E97220E00F57035 /* AppMetricaCore in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F9C2E97220E00F57035 /* AppMetricaCore */; };
 		FC607F9F2E97220E00F57035 /* AppMetricaCrashes in Frameworks */ = {isa = PBXBuildFile; productRef = FC607F9E2E97220E00F57035 /* AppMetricaCrashes */; };
@@ -16,6 +14,9 @@
 		FC607FA32E97220E00F57035 /* AppMetricaScreenshot in Frameworks */ = {isa = PBXBuildFile; productRef = FC607FA22E97220E00F57035 /* AppMetricaScreenshot */; };
 		FC9C9CCB2E9D21AF00C4E25F /* SwiftGen+Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C9CC82E9D21AF00C4E25F /* SwiftGen+Assets.swift */; };
 		FC9C9CCC2E9D21AF00C4E25F /* SwiftGen+Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C9CC92E9D21AF00C4E25F /* SwiftGen+Strings.swift */; };
+		FC9C9D642E9DCC2100C4E25F /* InlineSnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = FC9C9D632E9DCC2100C4E25F /* InlineSnapshotTesting */; };
+		FC9C9D662E9DCC2100C4E25F /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = FC9C9D652E9DCC2100C4E25F /* SnapshotTesting */; };
+		FC9C9D682E9DCC2100C4E25F /* SnapshotTestingCustomDump in Frameworks */ = {isa = PBXBuildFile; productRef = FC9C9D672E9DCC2100C4E25F /* SnapshotTestingCustomDump */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,12 +76,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC607FA32E97220E00F57035 /* AppMetricaScreenshot in Frameworks */,
-				FC607F0A2E971EE000F57035 /* YandexMobileMetrica in Frameworks */,
 				FC607F9F2E97220E00F57035 /* AppMetricaCrashes in Frameworks */,
 				FC607F9D2E97220E00F57035 /* AppMetricaCore in Frameworks */,
 				FC607F9B2E97220E00F57035 /* AppMetricaAdSupport in Frameworks */,
 				FC607FA12E97220E00F57035 /* AppMetricaLibraryAdapter in Frameworks */,
-				FC607F0C2E971EE000F57035 /* YandexMobileMetricaCrashes in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,6 +87,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC9C9D682E9DCC2100C4E25F /* SnapshotTestingCustomDump in Frameworks */,
+				FC9C9D642E9DCC2100C4E25F /* InlineSnapshotTesting in Frameworks */,
+				FC9C9D662E9DCC2100C4E25F /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,8 +228,8 @@
 			mainGroup = FC7A57AE2E61BD1100815114;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FC607F082E971EE000F57035 /* XCRemoteSwiftPackageReference "metrica-sdk-ios" */,
 				FC607F992E97220E00F57035 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */,
+				FC9C9D622E9DCC2100C4E25F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FC7A57B82E61BD1100815114 /* Products */;
@@ -588,14 +590,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FC607F082E971EE000F57035 /* XCRemoteSwiftPackageReference "metrica-sdk-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/yandexmobile/metrica-sdk-ios";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.5.2;
-			};
-		};
 		FC607F992E97220E00F57035 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/appmetrica/appmetrica-sdk-ios";
@@ -604,19 +598,17 @@
 				minimumVersion = 5.13.0;
 			};
 		};
+		FC9C9D622E9DCC2100C4E25F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.18.7;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		FC607F092E971EE000F57035 /* YandexMobileMetrica */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FC607F082E971EE000F57035 /* XCRemoteSwiftPackageReference "metrica-sdk-ios" */;
-			productName = YandexMobileMetrica;
-		};
-		FC607F0B2E971EE000F57035 /* YandexMobileMetricaCrashes */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FC607F082E971EE000F57035 /* XCRemoteSwiftPackageReference "metrica-sdk-ios" */;
-			productName = YandexMobileMetricaCrashes;
-		};
 		FC607F9A2E97220E00F57035 /* AppMetricaAdSupport */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FC607F992E97220E00F57035 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */;
@@ -641,6 +633,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FC607F992E97220E00F57035 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */;
 			productName = AppMetricaScreenshot;
+		};
+		FC9C9D632E9DCC2100C4E25F /* InlineSnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FC9C9D622E9DCC2100C4E25F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = InlineSnapshotTesting;
+		};
+		FC9C9D652E9DCC2100C4E25F /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FC9C9D622E9DCC2100C4E25F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+		FC9C9D672E9DCC2100C4E25F /* SnapshotTestingCustomDump */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FC9C9D622E9DCC2100C4E25F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTestingCustomDump;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

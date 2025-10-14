@@ -55,6 +55,8 @@ final class TrackerViewCell: UICollectionViewCell {
         button.setImage(image, for: .normal)
         button.tintColor = tracker.color
     }
+    
+
 
     // MARK: - Actions
     @objc private func toggleDone() {

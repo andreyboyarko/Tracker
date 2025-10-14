@@ -9,39 +9,50 @@ final class TrackerSnapshotTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        // Берём контейнер из AppDelegate (поэтому Host Application обязателен)
+        // ⚠️ включить один раз, чтобы перезаписать снимки
+        isRecording = false  // ← поставить true на один прогон, потом вернуть false
+
+        // Делаем снапшоты детерминированными
+        UIView.setAnimationsEnabled(false)
+        UserDefaults.standard.set(["ru"], forKey: "AppleLanguages")   // фиксируем язык
+        UserDefaults.standard.set("ru_RU", forKey: "AppleLocale")
+        UserDefaults.standard.synchronize()
+
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         container = appDelegate.storeContainer
 
-        // Создаём тестируемый экран как в приложении
         sut = TrackersViewController(
             categoryStore: container.categoryStore,
             trackerStore:  container.trackerStore,
             recordStore:   container.recordStore
         )
-        sut.loadViewIfNeeded() // гарантируем построение вью
+        sut.loadViewIfNeeded()
+
+        // Фиксируем дату/тему и делаем финальный layout
+        sut.overrideUserInterfaceStyle = .light
+        sut.view.layoutIfNeeded()
     }
 
     override func tearDown() {
+        UIView.setAnimationsEnabled(true)
         sut = nil
         container = nil
         super.tearDown()
     }
-
-    // Первый простой снимок (как в уроке)
+    
     func test_Trackers_light() {
+        let nav = UINavigationController(rootViewController: sut)
         assertSnapshot(
-            of: UINavigationController(rootViewController: sut),
-            as: .image(traits: .init(userInterfaceStyle: .light)),
+            of: nav,
+            as: .image(on: .iPhone13, traits: .init(userInterfaceStyle: .light)),
             testName: "TrackersVC_Light"
         )
     }
-
-    // По желанию — тёмная тема
     func test_Trackers_dark() {
+        let nav = UINavigationController(rootViewController: sut)
         assertSnapshot(
-            of: UINavigationController(rootViewController: sut),
-            as: .image(traits: .init(userInterfaceStyle: .dark)),
+            of: nav,
+            as: .image(on: .iPhone13, traits: .init(userInterfaceStyle: .dark)),
             testName: "TrackersVC_Dark"
         )
     }

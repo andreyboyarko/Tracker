@@ -5,10 +5,10 @@ final class NewTrackerCellScheduleViewController: UIViewController {
     private let button = TrackerButton(title: "Готово")
     
     private let rowHeight: CGFloat = 75
-    private let numberOfRows = CGFloat(WeekdaysEnum.allCases.count)
+    private let numberOfRows = CGFloat(Weekday.allCases.count)
     
-    var weekdays: [WeekdaysEnum] = []
-    var setWeekdays: (([WeekdaysEnum]) -> Void)?
+    var weekdays: [Weekday] = []
+    var setWeekdays: (([Weekday]) -> Void)?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -74,7 +74,7 @@ extension NewTrackerCellScheduleViewController: UITableViewDelegate {
 
 extension NewTrackerCellScheduleViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        WeekdaysEnum.allCases.count
+        Weekday.allCases.count
     }
     
     func tableView(_ tableView: UITableView,
@@ -86,7 +86,7 @@ extension NewTrackerCellScheduleViewController: UITableViewDataSource {
             return UITableViewCell()
         }
         
-        let day = WeekdaysEnum.allCases[indexPath.row]
+        let day = Weekday.allCases[indexPath.row]
         cell.setWeekday(day)
         cell.isOn = weekdays.contains(day)
         cell.onToggle = { [weak self] day in

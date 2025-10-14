@@ -12,11 +12,12 @@ final class NewTrackerWeekDayCell: UITableViewCell {
             switcher.isOn = isOn
         }
     }
-    var onToggle: ((WeekdaysEnum) -> Void)?
+    var onToggle: ((Weekday) -> Void)?
     
     static let identifier = "NewTrackerWeekDayCell"
     
-    private var weekday: WeekdaysEnum?
+    private var weekday: Weekday?
+    private let formatter = DateFormatter()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -56,9 +57,9 @@ final class NewTrackerWeekDayCell: UITableViewCell {
         ])
     }
     
-    func setWeekday(_ weekday: WeekdaysEnum) {
+    func setWeekday(_ weekday: Weekday) {
         self.weekday = weekday
-        label.text = weekday.rawValue
+        label.text = weekday.name(formatter: formatter)
     }
     
     @objc private func toggleSwitch() {

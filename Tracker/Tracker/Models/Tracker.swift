@@ -6,14 +6,14 @@ struct Tracker: Hashable {
     let title: String
     let color: UIColor
     let emoji: String
-    let weekdays: [WeekdaysEnum]
+    let weekdays: [Weekday]
 
     init(
         id: UUID = UUID(),
         title: String,
         color: UIColor,
         emoji: String,
-        weekdays: [WeekdaysEnum]
+        weekdays: [Weekday]
     ) {
         self.id = id
         self.title = title
