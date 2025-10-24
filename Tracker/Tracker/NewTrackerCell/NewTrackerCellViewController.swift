@@ -1,4 +1,3 @@
-
 import UIKit
 
 final class NewTrackerCellViewController: UIViewController {
@@ -8,13 +7,33 @@ final class NewTrackerCellViewController: UIViewController {
     var showSchedule = false
 
     // MARK: - State
-    private var trackerWeekdays: [WeekdaysEnum] = []
+    private var trackerWeekdays: [Weekday] = []
     private var selectedEmoji: String?
     private var selectedColor: UIColor?
 
     private let maxLength = 38
 
-    // MARK: - Data (ровно 18 и 18 — 6×3)
+    // MARK: - Edit mode
+    private var isEditMode = false
+    private var editInitialTracker: Tracker?
+    private var editInitialCategoryTitle: String?
+    private var editInitialCount: Int = 0
+
+    // лёгкие «префилды» для редактирования
+    private var trackerId: UUID?
+    private var categoryName: String?
+    private var daysCount: Int?
+
+    private lazy var daysCountLabel: UILabel = {
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 32, weight: .bold)
+        l.textColor = .color
+        l.isHidden = true
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    // MARK: - Data
     private let emojis: [String] = [
         "🙂","😻","🌺","🐶","❤️","😱",
         "😇","😡","🧊","🤔","🙌","🍔",
@@ -27,101 +46,29 @@ final class NewTrackerCellViewController: UIViewController {
         .ybColor13, .ybColor14, .ybColor15, .ybColor16, .ybColor17, .ybColor18
     ]
 
-    // MARK: - UI: скроллинг
-    private let scrollView: UIScrollView = {
-        let v = UIScrollView()
-        v.alwaysBounceVertical = true
-        v.keyboardDismissMode = .interactive
-        v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }()
-    private let contentView: UIView = {
-        let v = UIView()
-        v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }()
+    // MARK: - UI
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
 
-    // MARK: - UI: верх
     private let containerView = UIView()
     private let titleTextField = UITextField()
     private let clearButton = UIButton(type: .system)
     private let errorLabel = UILabel()
 
-    // MARK: - UI: таблица «Категория/Расписание»
     private let buttonsTableView = UITableView(frame: .zero, style: .plain)
-    private let buttonTitles = ["Категория", "Расписание"]
+    private let buttonTitles: [String] = [L10n.category, L10n.schedule]
     private var trackerCategory: TrackerCategory?
-    @objc private func pushCategory() {
-        let vc = CategoryViewController()
-        vc.modalPresentationStyle = .pageSheet
-        vc.onCategorySelected = { [weak self] title in
-            guard let self else { return }
-            self.trackerCategory = TrackerCategory(title: title, trackers: [])
-            self.buttonsTableView.reloadRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
-        }
-        present(UINavigationController(rootViewController: vc), animated: true)
-    }
 
-    // MARK: - UI: Emoji / Color
-    private let emojiTitleLabel: UILabel = {
-        let l = UILabel()
-        l.text = "Emoji"
-        l.font = .systemFont(ofSize: 19, weight: .bold)
-        l.textColor = UIColor(named: "color") ?? .label
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
+    private let emojiTitleLabel = UILabel()
+    private lazy var emojiCollection = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
 
-    private lazy var emojiCollection: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 12
-        layout.minimumLineSpacing = 12
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        layout.estimatedItemSize = .zero
+    private let colorTitleLabel = UILabel()
+    private lazy var colorCollection = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
 
-        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        cv.backgroundColor = .clear
-        cv.isScrollEnabled = false
-        cv.dataSource = self
-        cv.delegate = self
-        cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.reuseId)
-        return cv
-    }()
-
-    private let colorTitleLabel: UILabel = {
-        let l = UILabel()
-        l.text = "Цвет"
-        l.font = .systemFont(ofSize: 19, weight: .bold)
-        l.textColor = UIColor(named: "color") ?? .label
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
-
-    private lazy var colorCollection: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 12
-        layout.minimumLineSpacing = 12
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        layout.estimatedItemSize = .zero
-
-        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        cv.backgroundColor = .clear
-        cv.isScrollEnabled = false
-        cv.clipsToBounds = false
-        cv.dataSource = self
-        cv.delegate = self
-        cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.reuseId)
-        return cv
-    }()
-
-    // MARK: - UI: нижние кнопки
     private let cancelButton = UIButton(type: .system)
-    private let saveButton   = TrackerButton(title: "Сохранить")
+    private let saveButton   = TrackerButton(title: L10n.save)
     private let buttonStackView = UIStackView()
 
-    // MARK: - Flags
     private var showErrorLabel = false {
         didSet { errorLabel.isHidden = !showErrorLabel }
     }
@@ -133,22 +80,19 @@ final class NewTrackerCellViewController: UIViewController {
         }
     }
 
-    // (удалены IUO: emojiHeightC!, colorHeightC!)
-
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .ybBlack
-        navigationItem.title = "Новая привычка"
+        navigationItem.title = L10n.newTracker
 
         setupViews()
         setupLayout()
+        applyEditPrefillIfNeeded()
         setupKeyboardHandling()
     }
 
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
+    deinit { NotificationCenter.default.removeObserver(self) }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -156,160 +100,7 @@ final class NewTrackerCellViewController: UIViewController {
         scrollView.scrollIndicatorInsets.bottom = 24
     }
 
-    // MARK: - Setup
-    private func setupViews() {
-        // scroll
-        view.addSubview(scrollView)
-        scrollView.addSubview(contentView)
-
-        // контейнер для TextField
-        containerView.backgroundColor = .background
-        containerView.layer.cornerRadius = 16
-        containerView.layer.masksToBounds = true
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-
-        titleTextField.placeholder = "Введите название трекера"
-        titleTextField.addTarget(self, action: #selector(limitLength), for: .editingChanged)
-        titleTextField.textColor = .color
-        titleTextField.translatesAutoresizingMaskIntoConstraints = false
-
-        clearButton.setImage(UIImage(resource: .clear), for: .normal)
-        clearButton.addTarget(self, action: #selector(clearTextField), for: .touchUpInside)
-        clearButton.translatesAutoresizingMaskIntoConstraints = false
-
-        errorLabel.text = "Ограничение 38 символов"
-        errorLabel.textColor = .ybRed
-        errorLabel.font = .ypRegular
-        errorLabel.isHidden = true
-        errorLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        buttonsTableView.translatesAutoresizingMaskIntoConstraints = false
-        buttonsTableView.backgroundColor = .background
-        buttonsTableView.separatorStyle = .none
-        buttonsTableView.layer.cornerRadius = 16
-        buttonsTableView.layer.masksToBounds = true
-        buttonsTableView.isScrollEnabled = false
-        buttonsTableView.delegate = self
-        buttonsTableView.dataSource = self
-        buttonsTableView.register(NewTrackerCell.self, forCellReuseIdentifier: NewTrackerCell.identifier)
-
-        cancelButton.layer.cornerRadius = 16
-        cancelButton.layer.masksToBounds = true
-        cancelButton.layer.borderColor = UIColor.ybRed.cgColor
-        cancelButton.layer.borderWidth = 1
-        cancelButton.setTitle("Отменить", for: .normal)
-        cancelButton.titleLabel?.font = .ypRegular
-        cancelButton.setTitleColor(.ybRed, for: .normal)
-        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
-
-        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-        showClearButton = false
-
-        buttonStackView.spacing = 8
-        buttonStackView.axis = .horizontal
-        buttonStackView.distribution = .fillEqually
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonStackView.addArrangedSubview(cancelButton)
-        buttonStackView.addArrangedSubview(saveButton)
-
-        // hierarchy
-        contentView.addSubview(containerView)
-        containerView.addSubview(titleTextField)
-        containerView.addSubview(clearButton)
-
-        contentView.addSubview(errorLabel)
-        contentView.addSubview(buttonsTableView)
-
-        contentView.addSubview(emojiTitleLabel)
-        contentView.addSubview(emojiCollection)
-
-        contentView.addSubview(colorTitleLabel)
-        contentView.addSubview(colorCollection)
-
-        contentView.addSubview(buttonStackView)
-    }
-
-    private func setupLayout() {
-        // фиксированные высоты секций по макету — локальные констрейнты (без IUO)
-        let emojiHeightC = emojiCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
-        let colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 40 * 3 + 12 * 2)
-
-        NSLayoutConstraint.activate([
-            // scroll & content
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-
-            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-
-            // верх
-            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-            containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            containerView.heightAnchor.constraint(equalToConstant: 75),
-
-            titleTextField.topAnchor.constraint(equalTo: containerView.topAnchor),
-            titleTextField.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            titleTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            titleTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -41),
-
-            clearButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            clearButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
-
-            errorLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            errorLabel.topAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 8),
-
-            // таблица
-            buttonsTableView.topAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 24),
-            buttonsTableView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            buttonsTableView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            buttonsTableView.heightAnchor.constraint(equalToConstant: showSchedule ? 150 : 75),
-
-            // Emoji
-            emojiTitleLabel.topAnchor.constraint(equalTo: buttonsTableView.bottomAnchor, constant: 24),
-            emojiTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            emojiTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -16),
-
-            emojiCollection.topAnchor.constraint(equalTo: emojiTitleLabel.bottomAnchor, constant: 12),
-            emojiCollection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            emojiCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            emojiHeightC,
-
-            // Color
-            colorTitleLabel.topAnchor.constraint(equalTo: emojiCollection.bottomAnchor, constant: 24),
-            colorTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            colorTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -16),
-
-            colorCollection.topAnchor.constraint(equalTo: colorTitleLabel.bottomAnchor, constant: 12),
-            colorCollection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            colorCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            colorHeightC,
-
-            // низ
-            cancelButton.heightAnchor.constraint(equalToConstant: 60),
-            buttonStackView.topAnchor.constraint(greaterThanOrEqualTo: colorCollection.bottomAnchor, constant: 24),
-            buttonStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            buttonStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            buttonStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
-            buttonStackView.heightAnchor.constraint(equalToConstant: 60)
-        ])
-    }
-
-    private func setupKeyboardHandling() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(kbWillChange(_:)),
-            name: UIResponder.keyboardWillChangeFrameNotification,
-            object: nil
-        )
-    }
-
-    // MARK: - Actions
+    // MARK: - Keyboard
     @objc private func kbWillChange(_ n: Notification) {
         guard
             let u = n.userInfo,
@@ -333,6 +124,232 @@ final class NewTrackerCellViewController: UIViewController {
         )
     }
 
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(kbWillChange(_:)),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+    }
+
+    // MARK: - Edit Setup
+    /// Вызывается из списка трекеров при долгом тапе → «Редактировать»
+    func setToEdit(tracker: Tracker, of category: String, count: Int) {
+        isEditMode = true
+        editInitialTracker = tracker
+        editInitialCategoryTitle = category
+        editInitialCount = count
+
+        trackerId = tracker.id
+        categoryName = category
+        selectedColor = tracker.color
+        selectedEmoji = tracker.emoji
+        trackerWeekdays = tracker.weekdays
+        titleTextField.text = tracker.title
+        daysCount = count
+    }
+
+    private func applyEditPrefillIfNeeded() {
+        guard isEditMode, editInitialTracker != nil else { return }
+
+        navigationItem.title = L10n.edit  // «Редактировать»
+
+        if let cnt = editInitialCount as Int?, cnt > 0 {
+            daysCountLabel.text = L10n.daysCount(cnt)
+            daysCountLabel.isHidden = false
+        }
+
+        emojiCollection.reloadData()
+        colorCollection.reloadData()
+        buttonsTableView.reloadData()
+    }
+
+    // MARK: - Setup
+    private func setupViews() {
+        // scroll
+        scrollView.alwaysBounceVertical = true
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(daysCountLabel)
+
+        // input container
+        containerView.backgroundColor = .background
+        containerView.layer.cornerRadius = 16
+        containerView.layer.masksToBounds = true
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(containerView)
+
+        titleTextField.placeholder = L10n.enterTrackerName
+        titleTextField.addTarget(self, action: #selector(limitLength), for: .editingChanged)
+        titleTextField.textColor = .color
+        titleTextField.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(titleTextField)
+
+        clearButton.setImage(Asset.clear.image, for: .normal)
+        clearButton.addTarget(self, action: #selector(clearTextField), for: .touchUpInside)
+        clearButton.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(clearButton)
+
+        errorLabel.text = L10n.errorTrackerName
+        errorLabel.textColor = .ybRed
+        errorLabel.font = .ypRegular
+        errorLabel.isHidden = true
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(errorLabel)
+
+        // table «Категория/Расписание»
+        buttonsTableView.translatesAutoresizingMaskIntoConstraints = false
+        buttonsTableView.backgroundColor = .background
+        buttonsTableView.layer.cornerRadius = 16
+        buttonsTableView.layer.masksToBounds = true
+        buttonsTableView.isScrollEnabled = false
+        buttonsTableView.delegate = self
+        buttonsTableView.dataSource = self
+        buttonsTableView.register(NewTrackerCell.self, forCellReuseIdentifier: NewTrackerCell.identifier)
+        contentView.addSubview(buttonsTableView)
+
+        // Emoji section
+        emojiTitleLabel.text = "Emoji"
+        emojiTitleLabel.font = .systemFont(ofSize: 19, weight: .bold)
+        emojiTitleLabel.textColor = .color
+        emojiTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(emojiTitleLabel)
+
+        let emojiLayout = UICollectionViewFlowLayout()
+        emojiLayout.minimumInteritemSpacing = 12
+        emojiLayout.minimumLineSpacing = 12
+        emojiCollection = UICollectionView(frame: .zero, collectionViewLayout: emojiLayout)
+        emojiCollection.backgroundColor = .clear
+        emojiCollection.dataSource = self
+        emojiCollection.delegate = self
+        emojiCollection.translatesAutoresizingMaskIntoConstraints = false
+        emojiCollection.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.reuseId)
+        contentView.addSubview(emojiCollection)
+
+        // Color section
+        colorTitleLabel.text = L10n.color
+        colorTitleLabel.font = .systemFont(ofSize: 19, weight: .bold)
+        colorTitleLabel.textColor = .color
+        colorTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(colorTitleLabel)
+
+        let colorLayout = UICollectionViewFlowLayout()
+        colorLayout.minimumInteritemSpacing = 12
+        colorLayout.minimumLineSpacing = 12
+        colorCollection = UICollectionView(frame: .zero, collectionViewLayout: colorLayout)
+        colorCollection.backgroundColor = .clear
+        colorCollection.dataSource = self
+        colorCollection.delegate = self
+        colorCollection.translatesAutoresizingMaskIntoConstraints = false
+        colorCollection.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.reuseId)
+        contentView.addSubview(colorCollection)
+
+        // bottom buttons
+        cancelButton.layer.cornerRadius = 16
+        colorCollection.clipsToBounds = false
+        colorCollection.layer.masksToBounds = false
+        cancelButton.layer.masksToBounds = true
+        cancelButton.layer.borderColor = UIColor.ybRed.cgColor
+        cancelButton.layer.borderWidth = 1
+        cancelButton.setTitle(L10n.cancel, for: .normal)
+        cancelButton.titleLabel?.font = .ypRegular
+        cancelButton.setTitleColor(.ybRed, for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+
+        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        showClearButton = false
+
+        buttonStackView.spacing = 8
+        buttonStackView.axis = .horizontal
+        buttonStackView.distribution = .fillEqually
+        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
+        buttonStackView.addArrangedSubview(cancelButton)
+        buttonStackView.addArrangedSubview(saveButton)
+        contentView.addSubview(buttonStackView)
+    }
+
+    private func setupLayout() {
+        // фиксированные высоты секций (6×3 сетки)
+        let emojiHeightC = emojiCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
+        let colorHeightC = colorCollection.heightAnchor.constraint(equalToConstant: 46 * 3 + 12 * 2)
+
+        NSLayoutConstraint.activate([
+            // scroll & content
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            // top
+            daysCountLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+            daysCountLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+
+            containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            containerView.heightAnchor.constraint(equalToConstant: 75),
+
+            titleTextField.topAnchor.constraint(equalTo: containerView.topAnchor),
+            titleTextField.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            titleTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            titleTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -41),
+
+            clearButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            clearButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
+
+            errorLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            errorLabel.topAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 8),
+
+            // table
+            buttonsTableView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 24),
+            buttonsTableView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            buttonsTableView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            buttonsTableView.heightAnchor.constraint(equalToConstant: showSchedule ? 150 : 75),
+
+            // Emoji
+            emojiTitleLabel.topAnchor.constraint(equalTo: buttonsTableView.bottomAnchor, constant: 24),
+            emojiTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+
+            emojiCollection.topAnchor.constraint(equalTo: emojiTitleLabel.bottomAnchor, constant: 12),
+            emojiCollection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            emojiCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            emojiHeightC,
+
+            // Color
+            colorTitleLabel.topAnchor.constraint(equalTo: emojiCollection.bottomAnchor, constant: 24),
+            colorTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+
+            colorCollection.topAnchor.constraint(equalTo: colorTitleLabel.bottomAnchor, constant: 12),
+            colorCollection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            colorCollection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            colorHeightC,
+
+            // bottom buttons
+            buttonStackView.topAnchor.constraint(greaterThanOrEqualTo: colorCollection.bottomAnchor, constant: 24),
+            buttonStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            buttonStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            buttonStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
+            buttonStackView.heightAnchor.constraint(equalToConstant: 60)
+        ])
+
+        if trackerId != nil {
+            containerView.topAnchor.constraint(equalTo: daysCountLabel.bottomAnchor, constant: 40).isActive = true
+        } else {
+            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24).isActive = true
+        }
+    }
+
+    // MARK: - Actions
     @objc private func limitLength(_ textField: UITextField) {
         let text = textField.text ?? ""
         showClearButton = !text.isEmpty
@@ -349,84 +366,70 @@ final class NewTrackerCellViewController: UIViewController {
     @objc private func cancelTapped() { dismiss(animated: true) }
 
     @objc private func saveTapped() {
-        // 1) Валидации
         if trackerWeekdays.isEmpty && showSchedule {
-            showAlertError(message: "Нужно выбрать хотя бы один день недели")
+            showAlertError(message: L10n.alertChooseWeekday)
             return
         }
         guard let title = titleTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
               !title.isEmpty else {
-            showAlertError(message: "Заполните название")
+            showAlertError(message: L10n.alertEnterTrackerName)
             return
         }
         guard let pickedEmoji = selectedEmoji else {
-            showAlertError(message: "Выберите эмодзи")
+            showAlertError(message: L10n.alertChooseEmoji)
             return
         }
         guard let pickedColor = selectedColor else {
-            showAlertError(message: "Выберите цвет")
+            showAlertError(message: L10n.alertChooseColor)
             return
         }
-        guard let categoryName = trackerCategory?.title else {
-            showAlertError(message: "Нужно выбрать категорию")
+
+        // Категория: сначала из выбора на экране, иначе — из предзаполнения при редактировании
+        let resolvedCategoryTitle: String? = {
+            if let title = trackerCategory?.title { return title }
+            if let title = categoryName { return title }
+            return nil
+        }()
+        guard let categoryName = resolvedCategoryTitle else {
+            showAlertError(message: L10n.alertChooseCategory)
             return
         }
-        
-        // 2) Сначала создаём ТРЕКЕР…
+
+        let finalId = trackerId ?? editInitialTracker?.id ?? UUID()
+
         let tracker = Tracker(
-            id: UUID(),
+            id: finalId,
             title: title,
             color: pickedColor,
             emoji: pickedEmoji,
-            weekdays: showSchedule ? trackerWeekdays : Array(WeekdaysEnum.allCases)
+            weekdays: showSchedule ? trackerWeekdays : Array(Weekday.allCases)
         )
 
-        // 3) …затем одну ЕДИНСТВЕННУЮ категорию с именем, выбранным пользователем
         let category = TrackerCategory(title: categoryName, trackers: [tracker])
-
-        // 4) Отдаём наружу и закрываем экран ровно один раз
         onTrackerAdded?(category)
         dismiss(animated: true)
     }
-    
-    
 
     private func showAlertError(message: String) {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Окей", style: .cancel))
+        alert.addAction(UIAlertAction(title: L10n.okay, style: .cancel))
         present(alert, animated: true)
-    }
-
-    @objc private func pushSchedule() {
-        let vc = NewTrackerCellScheduleViewController()
-        vc.modalPresentationStyle = .pageSheet
-        vc.weekdays = trackerWeekdays
-        vc.setWeekdays = { [weak self] weekdays in
-            guard let self else { return }
-            self.trackerWeekdays = weekdays
-            // обновляем ровно строку "Расписание"
-            self.buttonsTableView.reloadRows(at: [IndexPath(row: 1, section: 0)], with: .automatic)
-        }
-        present(UINavigationController(rootViewController: vc), animated: true)
     }
 }
 
 // MARK: - Table
-extension NewTrackerCellViewController: UITableViewDelegate {
+extension NewTrackerCellViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { 75 }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if indexPath.row == 0 {
-            pushCategory()
-        } else if showSchedule && indexPath.row == 1 {
-            pushSchedule()
-        }
+        if indexPath.row == 0 { pushCategory() }
+        else if showSchedule && indexPath.row == 1 { pushSchedule() }
         tableView.deselectRow(at: indexPath, animated: true)
     }
-}
 
-extension NewTrackerCellViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { showSchedule ? buttonTitles.count : 1 }
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        showSchedule ? buttonTitles.count : 1
+    }
 
     func tableView(_ tableView: UITableView,
                    cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -442,26 +445,55 @@ extension NewTrackerCellViewController: UITableViewDataSource {
 
         if indexPath.row == 0 {
             // Категория
-            cell.setSubtitle(trackerCategory?.title)
+            let t = trackerCategory?.title ?? categoryName
+            cell.setSubtitle(t)
         } else if showSchedule && indexPath.row == 1 {
             // Расписание
+            let df = DateFormatter()
             let subtitle: String? = {
                 if trackerWeekdays.isEmpty { return nil }
-                if trackerWeekdays.count == 7 { return "Каждый день" }
-                return trackerWeekdays.map { $0.shortTitle }.joined(separator: ", ")
+                if trackerWeekdays.count == 7 { return L10n.everyday }
+                return trackerWeekdays
+                    .sorted { $0.rawValue < $1.rawValue }
+                    .map { $0.shortName(formatter: df) }
+                    .joined(separator: ", ")
             }()
             cell.setSubtitle(subtitle)
-        } else {
-            cell.setSubtitle(nil)
         }
 
         return cell
     }
 }
 
+// MARK: - Category / Schedule pushes
+private extension NewTrackerCellViewController {
+    @objc func pushCategory() {
+        let vc = CategoryViewController()
+        vc.modalPresentationStyle = .pageSheet
+        vc.onCategorySelected = { [weak self] title in
+            guard let self else { return }
+            self.categoryName = title
+            self.trackerCategory = TrackerCategory(title: title, trackers: [])
+            self.buttonsTableView.reloadRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+        }
+        present(UINavigationController(rootViewController: vc), animated: true)
+    }
+
+    @objc func pushSchedule() {
+        let vc = NewTrackerCellScheduleViewController()
+        vc.modalPresentationStyle = .pageSheet
+        vc.weekdays = trackerWeekdays
+        vc.setWeekdays = { [weak self] weekdays in
+            guard let self else { return }
+            self.trackerWeekdays = weekdays
+            self.buttonsTableView.reloadRows(at: [IndexPath(row: 1, section: 0)], with: .automatic)
+        }
+        present(UINavigationController(rootViewController: vc), animated: true)
+    }
+}
+
 // MARK: - Collections
 extension NewTrackerCellViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         collectionView === emojiCollection ? emojis.count : colors.count
     }
@@ -507,11 +539,8 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        if collectionView === emojiCollection {
-            return CGSize(width: 46, height: 46)
-        } else {
-            return CGSize(width: 40, height: 40)
-        }
+        collectionView === emojiCollection ? CGSize(width: 46, height: 46)
+                                           : CGSize(width: 40, height: 40)
     }
 
     private func exactSpacing(for collectionView: UICollectionView, itemSide: CGFloat) -> CGFloat {
@@ -525,18 +554,13 @@ extension NewTrackerCellViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-        if collectionView === emojiCollection {
-            return exactSpacing(for: collectionView, itemSide: 46)
-        } else {
-            return exactSpacing(for: collectionView, itemSide: 40)
-        }
+        collectionView === emojiCollection ? exactSpacing(for: collectionView, itemSide: 46)
+                                           : exactSpacing(for: collectionView, itemSide: 40)
     }
 
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
-                        minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 12
-    }
+                        minimumLineSpacingForSectionAt section: Int) -> CGFloat { 12 }
 
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,

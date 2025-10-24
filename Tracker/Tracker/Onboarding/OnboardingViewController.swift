@@ -5,13 +5,14 @@ import UIKit
 final class OnboardingViewController: UIViewController {
     private let label = UILabel()
     private let backgroundImageView = UIImageView()
-    private let button = TrackerButton(title: "Вот это технологии!")
+    private let button = TrackerButton(title: L10n.onboardingButton)
 
-    init(title: String, image: ImageResource) {
-        super.init(nibName: nil, bundle: nil)
-        label.text = title
-        backgroundImageView.image = UIImage(resource: image)
-    }
+
+    init(title: String, image: UIImage) {
+           super.init(nibName: nil, bundle: nil)
+           label.text = title
+           backgroundImageView.image = image
+       }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 

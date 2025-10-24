@@ -48,13 +48,15 @@ final class TrackerViewCell: UICollectionViewCell {
         titleLabel.text = tracker.title
 
         // дни (простейшая форма без склонений)
-        countLabel.text = "\(count) дней"
+        countLabel.text = L10n.daysCount(count)
 
         // плюс/галочка и её цвет
-        let image = UIImage(resource: isCompleted ? .check : .plus2)
-        button.setImage(image, for: .normal)
-        button.tintColor = tracker.color
+        let image = UIImage(resource: isCompleted ? .check : .plus2).withRenderingMode(.alwaysTemplate)
+            button.setImage(image, for: .normal)
+            button.tintColor = tracker.color
     }
+    
+
 
     // MARK: - Actions
     @objc private func toggleDone() {

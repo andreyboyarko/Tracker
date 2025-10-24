@@ -15,27 +15,34 @@ final class TabBarController: UITabBarController {
         // Сервисы
         let categoryStore = TrackerCategoryStore(stack: core)
         let trackerStore  = TrackerStore(stack: core, categoryStore: categoryStore)
-        let recordStore = TrackerRecordStore(stack: core)
+        let recordStore   = TrackerRecordStore(stack: core)
 
-        // VC с DI
+        // MARK: - Трекеры
         let trackersVC = TrackersViewController(
             categoryStore: categoryStore,
             trackerStore: trackerStore,
             recordStore: recordStore
         )
-        trackersVC.tabBarItem = UITabBarItem(title: "Трекеры",
-                                             image: UIImage(named:"trackers")?.withRenderingMode(.alwaysTemplate),
-                                             selectedImage: nil)
+        trackersVC.tabBarItem = UITabBarItem(
+            title: L10n.trackers, // или "Трекеры", если без локализации
+            image: UIImage(named: "trackers")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: nil
+        )
 
-        let statsVC = UIViewController()
-        statsVC.view.backgroundColor = .systemBackground
-        statsVC.tabBarItem = UITabBarItem(title: "Статистика",
-                                          image: UIImage(named:"stats")?.withRenderingMode(.alwaysTemplate),
-                                          selectedImage: nil)
+        // MARK: - Статистика (ВАЖНО: заменяем заглушку на твой контроллер)
+        let statsVC = StatisticsViewController(recordStore: recordStore)
+        statsVC.tabBarItem = UITabBarItem(
+            title: L10n.statistics, // или "Статистика"
+            image: UIImage(named: "stats")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: nil
+        )
 
-        viewControllers = [UINavigationController(rootViewController: trackersVC),
-                           UINavigationController(rootViewController: statsVC)]
+        viewControllers = [
+            UINavigationController(rootViewController: trackersVC),
+            UINavigationController(rootViewController: statsVC)
+        ]
 
+        // Цвета вкладок (как в макете)
         tabBar.tintColor = UIColor(named: "blue")
         tabBar.unselectedItemTintColor = UIColor(named: "ybGray")
 
@@ -43,6 +50,8 @@ final class TabBarController: UITabBarController {
         ap.configureWithOpaqueBackground()
         ap.backgroundColor = .systemBackground
         tabBar.standardAppearance = ap
-        if #available(iOS 15.0, *) { tabBar.scrollEdgeAppearance = ap }
+        if #available(iOS 15.0, *) {
+            tabBar.scrollEdgeAppearance = ap
+        }
     }
 }

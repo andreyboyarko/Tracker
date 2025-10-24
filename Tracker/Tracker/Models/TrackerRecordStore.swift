@@ -1,6 +1,10 @@
 
 import CoreData
 
+protocol TrackerRecordStoreDelegate: AnyObject {
+    func didUpdateRecords()
+}
+
 protocol TrackerRecordStoring: AnyObject {
     var onChange: (() -> Void)? { get set }
     func records() throws -> [TrackerRecord]
@@ -18,6 +22,7 @@ enum TrackerRecordStoreError: Error {
 final class TrackerRecordStore: NSObject, TrackerRecordStoring {
     private let stack: CoreDataStack
     var onChange: (() -> Void)?
+    weak var delegate: TrackerRecordStoreDelegate?  
 
     private lazy var frc: NSFetchedResultsController<TrackerRecordCoreData> = {
         let req: NSFetchRequest<TrackerRecordCoreData> = TrackerRecordCoreData.fetchRequest()
@@ -38,7 +43,7 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
         super.init()
         _ = frc
     }
-
+    
     func records() throws -> [TrackerRecord] {
         (frc.fetchedObjects ?? []).map { $0.toDomain() }
     }
@@ -46,7 +51,7 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
     func add(_ record: TrackerRecord) throws {
         let ctx = stack.viewContext
 
-        // найдём связанный трекер
+        // Находим связанный трекер
         let req: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
         req.predicate = NSPredicate(format: "id == %@", record.trackerId as CVarArg)
 
@@ -54,12 +59,18 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
             throw TrackerRecordStoreError.trackerNotFound(record.trackerId)
         }
 
+        // Создаём новую запись
         let rec = TrackerRecordCoreData(context: ctx)
         rec.id = UUID() // id самой записи
         rec.date = Calendar.current.startOfDay(for: record.date)
         rec.tracker = trackerObj
 
+        // Сохраняем изменения
         try ctx.save()
+
+        // Уведомляем слушателей
+        onChange?()
+        delegate?.didUpdateRecords()
     }
 
     func remove(for trackerID: UUID, on date: Date) throws {
@@ -77,6 +88,17 @@ final class TrackerRecordStore: NSObject, TrackerRecordStoring {
         if let rec = try ctx.fetch(req).first {
             ctx.delete(rec)
             try ctx.save()
+
+            // Уведомляем слушателей
+            onChange?()
+            delegate?.didUpdateRecords()
+        }
+    }
+    
+    private func notifyChange() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onChange?()
+            self?.delegate?.didUpdateRecords()
         }
     }
 
@@ -116,5 +138,17 @@ private extension TrackerRecordStore {
 extension TrackerRecordStore: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         onChange?()
+        delegate?.didUpdateRecords()                 // ← добавили
     }
 }
+
+//extension TrackerRecordStore: NSFetchedResultsControllerDelegate {
+//    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+//        // существующий коллбек оставим, если где-то используется
+//        onChange?()
+//        // плюс широковещательное уведомление (на главной очереди)
+//        DispatchQueue.main.async {
+//            NotificationCenter.default.post(name: .trackerRecordStoreDidChange, object: self)
+//        }
+//    }
+//}

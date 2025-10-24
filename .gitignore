@@ -28,3 +28,13 @@ fastlane/test_output
 # Misc
 .DS_Store
 *.orig
+xcuserdata/
+*.xcuserstate
+
+# Xcode user files
+*.xcuserstate
+xcuserdata/
+
+# Ignore Xcode user state files
+*.xcuserstate
+xcuserdata/
